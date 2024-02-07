@@ -1,9 +1,8 @@
 version: '3.1'
 
 services:
-
   db:
-    image: postgres
+    image: postgres:16.1
     restart: always
     ports:
       - 5432:5432
@@ -17,7 +16,7 @@ services:
       - 8080:8080
 
   minio:
-    image: minio/minio
+    image: minio/minio:latest
     restart: always
     command: server /data --console-address ":9001"
     ports:
