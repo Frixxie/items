@@ -1,24 +1,27 @@
-version: '3.1'
-
 services:
-  db:
-    image: postgres:16.1
+  postgres:
+    image: postgres:latest
     restart: always
     ports:
       - 5432:5432
     environment:
-      POSTGRES_PASSWORD: example
-
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - 8080:8080
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - db:/var/lib/postgresql/data
 
   minio:
     image: minio/minio:latest
     restart: always
     command: server /data --console-address ":9001"
+    environment:
+       MINIO_ROOT_USER: admin
+       MINIO_ROOT_PASSWORD: adminadmin
     ports:
       - 9000:9000
       - 9001:9001
+    volumes:
+      - minio:/data
+
+volumes:
+  db:
+  minio:
