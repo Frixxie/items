@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_PASSWORD: admin
     volumes:
-      - db:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
 
   minio:
     image: minio/minio:latest
@@ -20,8 +20,4 @@ services:
       - 9000:9000
       - 9001:9001
     volumes:
-      - minio:/data
-
-volumes:
-  db:
-  minio:
+      - ./data/minio:/data
