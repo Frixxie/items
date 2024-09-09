@@ -3,10 +3,12 @@ import cake/insert as i
 import cake/select as s
 import gleam/dynamic as d
 import helpers/time
+import helpers/uuid
+import youid/uuid as u
 
 pub type Item {
   Item(
-    id: Int,
+    id: u.Uuid,
     name: String,
     description: String,
     date_origin: Time,
@@ -33,7 +35,7 @@ pub fn from_dynamic(row) -> Item {
     |> d.from
     |> d.decode5(
       Item,
-      d.element(0, d.int),
+      d.element(0, uuid.from_dynamic),
       d.element(1, d.string),
       d.element(2, d.string),
       d.element(3, time.from_dynamic),
@@ -43,6 +45,7 @@ pub fn from_dynamic(row) -> Item {
 }
 
 pub fn insert_item(
+  id: uuid.Uuid,
   name: String,
   description: String,
   date_origin: Time,
@@ -50,6 +53,7 @@ pub fn insert_item(
 ) {
   [
     [
+      i.string(uuid.to_string(id)),
       i.string(name),
       i.string(description),
       i.string(date_origin |> birl.to_iso8601()),

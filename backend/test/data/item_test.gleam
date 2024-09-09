@@ -53,7 +53,3 @@ pub fn read_item_from_db_test() {
   let items = response.rows |> list.map(item.from_dynamic)
   items |> list.length |> should.equal(0)
 }
-
-pub fn write_item_to_db_test() {
-
-}
