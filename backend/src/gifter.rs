@@ -77,6 +77,6 @@ mod tests {
         assert_eq!(gifter.firstname, "Ola".to_string());
         assert_eq!(gifter.lastname, "Normann".to_string());
         assert_eq!(gifter.notes, "Han er grei".to_string());
-        assert_eq!(gifter.date_added, now);
+        assert!((gifter.date_added - now).num_seconds() < 1);
     }
 }

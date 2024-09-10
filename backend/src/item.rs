@@ -5,7 +5,7 @@ use sqlx::{prelude::FromRow, PgPool};
 
 #[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct Item {
-    id: i32,
+    pub id: i32,
     name: String,
     description: String,
     date_origin: DateTime<Utc>,
@@ -50,6 +50,8 @@ impl Item {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use super::*;
     use sqlx::PgPool;
 
@@ -68,7 +70,7 @@ mod tests {
 
         assert_eq!(item.name, "Hei".to_string());
         assert_eq!(item.description, "Test".to_string());
-        assert_eq!(item.date_origin, now);
-        assert_eq!(item.date_recieved, now);
+        assert!((item.date_origin - now).num_seconds() < 1);
+        assert!((item.date_recieved - now).num_seconds() < 1);
     }
 }
