@@ -1,4 +1,4 @@
-use axum::{debug_handler, extract::State, http::StatusCode, routing::get, Json, Router};
+use axum::{extract::State, http::StatusCode, routing::get, Json, Router};
 use sqlx::PgPool;
 
 use crate::{error::HandlerError, gifter::Gifter, item::Item, picture::Picture};
