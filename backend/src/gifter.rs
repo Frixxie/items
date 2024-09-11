@@ -29,14 +29,14 @@ impl Gifter {
         }
     }
 
-    pub async fn read_items_from_db(pool: &PgPool) -> Result<Vec<Gifter>> {
+    pub async fn read_from_db(pool: &PgPool) -> Result<Vec<Gifter>> {
         let gifter = sqlx::query_as::<_, Gifter>("SELECT * FROM gifters")
             .fetch_all(pool)
             .await?;
         Ok(gifter)
     }
 
-    pub async fn insert_item_into_db(
+    pub async fn insert_into_db(
         pool: &PgPool,
         firstname: &str,
         lastname: &str,
@@ -64,11 +64,11 @@ mod tests {
     #[sqlx::test]
     pub async fn create(pool: PgPool) {
         let now = Utc::now();
-        Gifter::insert_item_into_db(&pool, "Ola", "Normann", "Han er grei", now)
+        Gifter::insert_into_db(&pool, "Ola", "Normann", "Han er grei", now)
             .await
             .unwrap();
 
-        let gifters = Gifter::read_items_from_db(&pool).await;
+        let gifters = Gifter::read_from_db(&pool).await;
 
         assert!(gifters.is_ok());
         let gifters = gifters.unwrap();

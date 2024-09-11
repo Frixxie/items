@@ -59,11 +59,11 @@ mod tests {
     #[sqlx::test]
     pub async fn create(pool: PgPool) {
         let now = Utc::now();
-        Item::insert_item_into_db(&pool, "Hei", "Test", now, now)
+        Item::insert_into_db(&pool, "Hei", "Test", now, now)
             .await
             .unwrap();
 
-        let items = Item::read_items_from_db(&pool).await;
+        let items = Item::read_from_db(&pool).await;
 
         assert!(items.is_ok());
         let items = items.unwrap();

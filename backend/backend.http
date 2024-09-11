@@ -1,0 +1,17 @@
+GET http://localhost:3000/status/health
+200 OK
+
+###
+
+GET http://localhost:3000/api/items
+200 OK
+
+###
+
+GET http://localhost:3000/api/pictures
+200 OK
+
+###
+
+GET http://localhost:3000/api/gifters
+200 OK

@@ -5,9 +5,12 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.87"
-axum = "0.7.5"
+axum = { version = "0.7.5", features = ["macros"] }
 chrono = { version = "0.4.38", features = ["serde"] }
+log = "0.4.22"
 serde = { version = "1.0.210", features = ["derive"] }
 sha256 = "1.5.0"
+simple_logger = "5.0.0"
 sqlx = { version = "0.8.2", features = ["chrono", "postgres", "runtime-tokio"] }
+structopt = "0.3.26"
 tokio = { version = "1.40.0", features = ["full"] }
