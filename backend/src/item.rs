@@ -54,6 +54,14 @@ impl Item {
             .await?;
         Ok(())
     }
+
+    pub async fn update_in_db(pool: &PgPool, item: &Item) -> Result<()> {
+        sqlx::query("UPDATE items SET name = $1, description = $2, date_origin = $3, date_recieved = $4 WHERE id = $5")
+            .bind(&item.name).bind(&item.description).bind(item.date_origin).bind(item.date_recieved).bind(item.id)
+            .execute(pool)
+            .await?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -129,5 +137,45 @@ mod tests {
         dbg!(&item);
 
         assert!(item.is_err());
+    }
+
+    #[sqlx::test]
+    pub async fn update(pool: PgPool) {
+        let now = Utc::now();
+        Item::insert_into_db(&pool, "Hei", "Test", now, now)
+            .await
+            .unwrap();
+
+        let item = Item::read_from_db_by_id(&pool, 1).await;
+
+        assert!(item.is_ok());
+
+        let mut item = item.unwrap();
+
+        assert_eq!(item.id, 1);
+        assert_eq!(item.name, "Hei".to_string());
+        assert_eq!(item.description, "Test".to_string());
+        assert!((item.date_origin - now).num_seconds() < 1);
+        assert!((item.date_recieved - now).num_seconds() < 1);
+
+        item.name = "Hallo".to_string();
+
+        let res = Item::update_in_db(&pool, &item).await;
+
+        dbg!(&res);
+
+        assert!(res.is_ok());
+
+        let item2 = Item::read_from_db_by_id(&pool, 1).await;
+
+        assert!(item2.is_ok());
+
+        let item2 = item2.unwrap();
+
+        assert_eq!(item2.id, 1);
+        assert_eq!(item2.name, "Hallo".to_string());
+        assert_eq!(item2.description, "Test".to_string());
+        assert!((item2.date_origin - now).num_seconds() < 1);
+        assert!((item2.date_recieved - now).num_seconds() < 1);
     }
 }

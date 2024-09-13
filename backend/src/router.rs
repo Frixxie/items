@@ -3,7 +3,7 @@ use axum::{
     http::StatusCode,
     middleware::{self, Next},
     response::Response,
-    routing::{delete, get, post},
+    routing::{delete, get, post, put},
     Json, Router,
 };
 use log::info;
@@ -46,6 +46,7 @@ pub fn create_router(connection: PgPool) -> Router {
         .route("/api/items/:user_id", get(get_item_by_id))
         .route("/api/item", post(add_item))
         .route("/api/items/:user_id", delete(delete_item_by_id))
+        .route("/api/item", put(update_item))
         .route("/api/pictures", get(get_all_pictures))
         .route("/api/gifters", get(get_all_gifters))
         .with_state(connection)
@@ -98,6 +99,16 @@ async fn delete_item_by_id(
     Path(item_id): Path<i32>,
 ) -> Result<(), HandlerError> {
     Item::delete_from_db(&connection, item_id)
+        .await
+        .map_err(|e| HandlerError::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(())
+}
+
+async fn update_item(
+    State(connection): State<PgPool>,
+    Json(item): Json<Item>,
+) -> Result<(), HandlerError> {
+    Item::update_in_db(&connection, &item)
         .await
         .map_err(|e| HandlerError::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     Ok(())
