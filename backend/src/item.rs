@@ -9,7 +9,6 @@ pub struct Item {
     name: String,
     description: String,
     date_origin: DateTime<Utc>,
-    date_recieved: DateTime<Utc>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -17,7 +16,6 @@ pub struct NewItem {
     pub name: String,
     pub description: String,
     pub date_origin: DateTime<Utc>,
-    pub date_recieved: DateTime<Utc>,
 }
 
 impl Item {
@@ -41,9 +39,13 @@ impl Item {
         name: &str,
         description: &str,
         date_origin: DateTime<Utc>,
-        date_recieved: DateTime<Utc>,
     ) -> Result<()> {
-        sqlx::query("INSERT INTO items (name, description, date_origin, date_recieved) VALUES ($1, $2, $3, $4)").bind(name).bind(description).bind(date_origin).bind(date_recieved).execute(pool).await?;
+        sqlx::query("INSERT INTO items (name, description, date_origin) VALUES ($1, $2, $3)")
+            .bind(name)
+            .bind(description)
+            .bind(date_origin)
+            .execute(pool)
+            .await?;
         Ok(())
     }
 
@@ -56,8 +58,11 @@ impl Item {
     }
 
     pub async fn update_in_db(pool: &PgPool, item: &Item) -> Result<()> {
-        sqlx::query("UPDATE items SET name = $1, description = $2, date_origin = $3, date_recieved = $4 WHERE id = $5")
-            .bind(&item.name).bind(&item.description).bind(item.date_origin).bind(item.date_recieved).bind(item.id)
+        sqlx::query("UPDATE items SET name = $1, description = $2, date_origin = $3 WHERE id = $4")
+            .bind(&item.name)
+            .bind(&item.description)
+            .bind(item.date_origin)
+            .bind(item.id)
             .execute(pool)
             .await?;
         Ok(())
@@ -73,7 +78,7 @@ mod tests {
     #[sqlx::test]
     pub async fn create(pool: PgPool) {
         let now = Utc::now();
-        Item::insert_into_db(&pool, "Hei", "Test", now, now)
+        Item::insert_into_db(&pool, "Hei", "Test", now)
             .await
             .unwrap();
 
@@ -86,13 +91,12 @@ mod tests {
         assert_eq!(item.name, "Hei".to_string());
         assert_eq!(item.description, "Test".to_string());
         assert!((item.date_origin - now).num_seconds() < 1);
-        assert!((item.date_recieved - now).num_seconds() < 1);
     }
 
     #[sqlx::test]
     pub async fn select_by_id(pool: PgPool) {
         let now = Utc::now();
-        Item::insert_into_db(&pool, "Hei", "Test", now, now)
+        Item::insert_into_db(&pool, "Hei", "Test", now)
             .await
             .unwrap();
 
@@ -106,13 +110,12 @@ mod tests {
         assert_eq!(item.name, "Hei".to_string());
         assert_eq!(item.description, "Test".to_string());
         assert!((item.date_origin - now).num_seconds() < 1);
-        assert!((item.date_recieved - now).num_seconds() < 1);
     }
 
     #[sqlx::test]
     pub async fn delete(pool: PgPool) {
         let now = Utc::now();
-        Item::insert_into_db(&pool, "Hei", "Test", now, now)
+        Item::insert_into_db(&pool, "Hei", "Test", now)
             .await
             .unwrap();
 
@@ -126,7 +129,6 @@ mod tests {
         assert_eq!(item.name, "Hei".to_string());
         assert_eq!(item.description, "Test".to_string());
         assert!((item.date_origin - now).num_seconds() < 1);
-        assert!((item.date_recieved - now).num_seconds() < 1);
 
         let res = Item::delete_from_db(&pool, item.id).await;
 
@@ -142,7 +144,7 @@ mod tests {
     #[sqlx::test]
     pub async fn update(pool: PgPool) {
         let now = Utc::now();
-        Item::insert_into_db(&pool, "Hei", "Test", now, now)
+        Item::insert_into_db(&pool, "Hei", "Test", now)
             .await
             .unwrap();
 
@@ -156,7 +158,6 @@ mod tests {
         assert_eq!(item.name, "Hei".to_string());
         assert_eq!(item.description, "Test".to_string());
         assert!((item.date_origin - now).num_seconds() < 1);
-        assert!((item.date_recieved - now).num_seconds() < 1);
 
         item.name = "Hallo".to_string();
 
@@ -176,6 +177,5 @@ mod tests {
         assert_eq!(item2.name, "Hallo".to_string());
         assert_eq!(item2.description, "Test".to_string());
         assert!((item2.date_origin - now).num_seconds() < 1);
-        assert!((item2.date_recieved - now).num_seconds() < 1);
     }
 }

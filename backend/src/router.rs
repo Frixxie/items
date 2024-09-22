@@ -14,7 +14,6 @@ use tower_http::trace::TraceLayer;
 
 use crate::{
     error::HandlerError,
-    gifter::Gifter,
     item::{Item, NewItem},
     picture::Picture,
 };
@@ -48,7 +47,6 @@ pub fn create_router(connection: PgPool) -> Router {
         .route("/api/items/:user_id", delete(delete_item_by_id))
         .route("/api/item", put(update_item))
         .route("/api/pictures", get(get_all_pictures))
-        .route("/api/gifters", get(get_all_gifters))
         .with_state(connection)
         .layer(
             ServiceBuilder::new()
@@ -87,7 +85,6 @@ async fn add_item(
         &payload.name,
         &payload.description,
         payload.date_origin,
-        payload.date_recieved,
     )
     .await
     .map_err(|e| HandlerError::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -121,13 +118,4 @@ async fn get_all_pictures(
         .await
         .map_err(|e| HandlerError::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     Ok(Json(pictures))
-}
-
-async fn get_all_gifters(
-    State(connection): State<PgPool>,
-) -> Result<Json<Vec<Gifter>>, HandlerError> {
-    let gifters = Gifter::read_from_db(&connection)
-        .await
-        .map_err(|e| HandlerError::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    Ok(Json(gifters))
 }
