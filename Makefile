@@ -26,6 +26,8 @@ docker_login:
 
 container: docker_builder docker_login
 	cd backend && docker buildx build -t ghcr.io/$(GITHUB_USER)/$(PROJECT_NAME):latest . --platform linux/amd64,linux/arm64 --builder builder --push
+	docker buildx rm builder
 
 container_tagged: docker_builder docker_login
 	cd backend && docker buildx build -t ghcr.io/$(GITHUB_USER)/$(PROJECT_NAME):$(DOCKERTAG) . --platform linux/amd64,linux/arm64 --builder builder --push
+	docker buildx rm builder
