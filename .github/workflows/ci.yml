@@ -1,0 +1,22 @@
+name: ci
+
+on: [push]
+
+env:
+  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+  GITHUB_USER: frixxie
+
+jobs:
+  build:
+    runs-on: self-hosted
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: make build
+        run: make build
+      - name: make test
+        run: make test
