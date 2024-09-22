@@ -9,6 +9,7 @@ on:
 
 env:
   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+  GITHUB_USER: Frixxie
 
 jobs:
   build:
