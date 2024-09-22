@@ -13,6 +13,7 @@ pub struct Picture {
 }
 
 impl Picture {
+    #[expect(dead_code)]
     pub fn new(
         id: i32,
         item_id: i32,
@@ -36,6 +37,7 @@ impl Picture {
         Ok(items)
     }
 
+    #[expect(dead_code)]
     pub async fn insert_into_db(
         pool: &PgPool,
         item_id: i32,
