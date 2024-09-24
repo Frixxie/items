@@ -10,6 +10,7 @@ pub struct Location {
 }
 
 impl Location {
+    #[expect(dead_code)]
     pub async fn read_from_db(pool: &PgPool) -> Result<Vec<Location>> {
         let locations = sqlx::query_as::<_, Location>("SELECT * FROM locations")
             .fetch_all(pool)
@@ -17,6 +18,7 @@ impl Location {
         Ok(locations)
     }
 
+    #[expect(dead_code)]
     pub async fn read_from_db_by_id(pool: &PgPool, id: i32) -> Result<Location> {
         let location = sqlx::query_as::<_, Location>("SELECT * FROM locations l WHERE l.id = $1")
             .bind(id)
@@ -25,6 +27,7 @@ impl Location {
         Ok(location)
     }
 
+    #[expect(dead_code)]
     pub async fn insert_into_db(pool: &PgPool, name: &str, description: &str) -> Result<()> {
         sqlx::query("INSERT INTO locations (name, description) VALUES ($1, $2)")
             .bind(name)
@@ -34,6 +37,7 @@ impl Location {
         Ok(())
     }
 
+    #[expect(dead_code)]
     pub async fn delete_from_db(pool: &PgPool, id: i32) -> Result<()> {
         sqlx::query("DELETE FROM locations l WHERE l.id = $1")
             .bind(id)
@@ -42,6 +46,7 @@ impl Location {
         Ok(())
     }
 
+    #[expect(dead_code)]
     pub async fn update_in_db(pool: &PgPool, location: &Location) -> Result<()> {
         sqlx::query("UPDATE locations SET name = $1, description = $2 WHERE id = $3")
             .bind(&location.name)
