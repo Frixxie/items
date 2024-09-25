@@ -1,5 +1,6 @@
 mod error;
 mod item;
+mod location;
 mod picture;
 mod router;
 
