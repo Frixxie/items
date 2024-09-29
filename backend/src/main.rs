@@ -2,6 +2,7 @@ mod error;
 mod item;
 mod location;
 mod picture;
+mod category;
 mod router;
 
 use std::str::FromStr;
