@@ -2,6 +2,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgPool};
 
+/// Category for grouping items
 #[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct Category {
     id: i32,
@@ -10,6 +11,7 @@ pub struct Category {
 }
 
 impl Category {
+    /// Read all categories from the database
     #[expect(dead_code)]
     pub async fn read_from_db(pool: &PgPool) -> Result<Vec<Category>> {
         let categories = sqlx::query_as::<_, Category>("SELECT * FROM categories")
@@ -18,6 +20,7 @@ impl Category {
         Ok(categories)
     }
 
+    /// Read category by id from the database
     #[expect(dead_code)]
     pub async fn read_from_db_by_id(pool: &PgPool, id: i32) -> Result<Category> {
         let category = sqlx::query_as::<_, Category>("SELECT * FROM categories l WHERE l.id = $1")
@@ -27,6 +30,7 @@ impl Category {
         Ok(category)
     }
 
+    /// Write category to database
     #[expect(dead_code)]
     pub async fn insert_into_db(pool: &PgPool, name: &str, description: &str) -> Result<()> {
         sqlx::query("INSERT INTO categories (name, description) VALUES ($1, $2)")
@@ -37,6 +41,7 @@ impl Category {
         Ok(())
     }
 
+    /// Remove category from database
     #[expect(dead_code)]
     pub async fn delete_from_db(pool: &PgPool, id: i32) -> Result<()> {
         sqlx::query("DELETE FROM categories l WHERE l.id = $1")
@@ -46,6 +51,7 @@ impl Category {
         Ok(())
     }
 
+    /// Update category in database
     #[expect(dead_code)]
     pub async fn update_in_db(pool: &PgPool, category: &Category) -> Result<()> {
         sqlx::query("UPDATE categories SET name = $1, description = $2 WHERE id = $3")
@@ -66,7 +72,7 @@ mod tests {
 
     #[sqlx::test]
     pub async fn create(pool: PgPool) {
-        Category::insert_into_db(&pool, "Kitchen", "Where we make food")
+        Category::insert_into_db(&pool, "Books", "Place to read words")
             .await
             .unwrap();
 
@@ -76,13 +82,13 @@ mod tests {
         let categories = categories.unwrap();
         let category = categories.first().unwrap();
 
-        assert_eq!(category.name, "Kitchen".to_string());
-        assert_eq!(category.description, "Where we make food".to_string());
+        assert_eq!(category.name, "Books".to_string());
+        assert_eq!(category.description, "Place to read words".to_string());
     }
 
     #[sqlx::test]
     pub async fn select_by_id(pool: PgPool) {
-        Category::insert_into_db(&pool, "Kitchen", "Where we make food")
+        Category::insert_into_db(&pool, "Books", "Place to read words")
             .await
             .unwrap();
 
@@ -91,13 +97,13 @@ mod tests {
         assert!(categories.is_ok());
         let category = categories.unwrap();
 
-        assert_eq!(category.name, "Kitchen".to_string());
-        assert_eq!(category.description, "Where we make food".to_string());
+        assert_eq!(category.name, "Books".to_string());
+        assert_eq!(category.description, "Place to read words".to_string());
     }
 
     #[sqlx::test]
     pub async fn delete(pool: PgPool) {
-        Category::insert_into_db(&pool, "Kitchen", "Where we make food")
+        Category::insert_into_db(&pool, "Books", "Place to read words")
             .await
             .unwrap();
 
@@ -106,8 +112,8 @@ mod tests {
         assert!(categories.is_ok());
         let category = categories.unwrap();
 
-        assert_eq!(category.name, "Kitchen".to_string());
-        assert_eq!(category.description, "Where we make food".to_string());
+        assert_eq!(category.name, "Books".to_string());
+        assert_eq!(category.description, "Place to read words".to_string());
 
         let res = Category::delete_from_db(&pool, category.id).await;
 
@@ -120,7 +126,7 @@ mod tests {
 
     #[sqlx::test]
     pub async fn update(pool: PgPool) {
-        Category::insert_into_db(&pool, "Kitchen", "Where we make food")
+        Category::insert_into_db(&pool, "Books", "Place to read words")
             .await
             .unwrap();
 
@@ -129,16 +135,16 @@ mod tests {
         assert!(categories.is_ok());
         let mut category = categories.unwrap();
 
-        assert_eq!(category.name, "Kitchen".to_string());
-        assert_eq!(category.description, "Where we make food".to_string());
+        assert_eq!(category.name, "Books".to_string());
+        assert_eq!(category.description, "Place to read words".to_string());
 
-        category.description = "Where I make food".to_string();
+        category.description = "Place where words with meaning are written".to_string();
         let res = Category::update_in_db(&pool, &category).await;
 
         assert!(res.is_ok());
 
         let category2 = Category::read_from_db_by_id(&pool, 1).await.unwrap();
-        assert_eq!(category2.name, "Kitchen".to_string());
-        assert_eq!(category2.description, "Where I make food".to_string());
+        assert_eq!(category2.name, "Books".to_string());
+        assert_eq!(category2.description, "Place where words with meaning are written".to_string());
     }
 }
