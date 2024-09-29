@@ -8,7 +8,6 @@ anyhow = "1.0.88"
 axum = { version = "0.7.5", features = ["macros"] }
 chrono = { version = "0.4.38", features = ["serde"] }
 log = "0.4.22"
-reqwest = { version = "0.12.7", features = ["json"] }
 serde = { version = "1.0.210", features = ["derive"] }
 sha256 = "1.5.0"
 simple_logger = "5.0.0"
