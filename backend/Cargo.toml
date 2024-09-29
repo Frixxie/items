@@ -8,6 +8,7 @@ anyhow = "1.0.88"
 axum = { version = "0.7.5", features = ["macros"] }
 chrono = { version = "0.4.38", features = ["serde"] }
 log = "0.4.22"
+reqwest = { version = "0.12.7", features = ["json"] }
 serde = { version = "1.0.210", features = ["derive"] }
 sha256 = "1.5.0"
 simple_logger = "5.0.0"
@@ -16,3 +17,7 @@ structopt = "0.3.26"
 tokio = { version = "1.40.0", features = ["full"] }
 tower = { version = "0.5.1", features = ["tokio", "tracing"] }
 tower-http = { version = "0.5.2", features = ["trace"] }
+
+[dev-dependencies]
+reqwest = { version = "0.12.7", features = ["native-tls", "json"] }
+pretty_assertions = "1.4.1"
