@@ -13,6 +13,7 @@ use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 
 use crate::{
+    category::{Category, NewCategory},
     error::HandlerError,
     item::{Item, NewItem},
     location::{Location, NewLocation},
@@ -52,6 +53,11 @@ pub fn create_router(connection: PgPool) -> Router {
         .route("/api/locations", post(add_location))
         .route("/api/locations/:user_id", delete(delete_location_by_id))
         .route("/api/locations", put(update_location))
+        .route("/api/categories", get(get_all_categories))
+        .route("/api/categories/:user_id", get(get_category_by_id))
+        .route("/api/categories", post(add_category))
+        .route("/api/categories/:user_id", delete(delete_category_by_id))
+        .route("/api/categories", put(update_category))
         .route("/api/pictures", get(get_all_pictures))
         .with_state(connection)
         .layer(
@@ -166,6 +172,55 @@ async fn update_location(
     Ok(())
 }
 
+async fn get_all_categories(
+    State(connection): State<PgPool>,
+) -> Result<Json<Vec<Category>>, HandlerError> {
+    let categories = Category::read_from_db(&connection)
+        .await
+        .map_err(|e| HandlerError::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(Json(categories))
+}
+
+async fn get_category_by_id(
+    State(connection): State<PgPool>,
+    Path(category_id): Path<i32>,
+) -> Result<Json<Category>, HandlerError> {
+    let category = Category::read_from_db_by_id(&connection, category_id)
+        .await
+        .map_err(|e| HandlerError::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(Json(category))
+}
+
+async fn add_category(
+    State(connection): State<PgPool>,
+    Json(payload): Json<NewCategory>,
+) -> Result<(), HandlerError> {
+    Category::insert_into_db(&connection, &payload.name, &payload.description)
+        .await
+        .map_err(|e| HandlerError::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(())
+}
+
+async fn delete_category_by_id(
+    State(connection): State<PgPool>,
+    Path(category_id): Path<i32>,
+) -> Result<(), HandlerError> {
+    Category::delete_from_db(&connection, category_id)
+        .await
+        .map_err(|e| HandlerError::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(())
+}
+
+async fn update_category(
+    State(connection): State<PgPool>,
+    Json(category): Json<Category>,
+) -> Result<(), HandlerError> {
+    Category::update_in_db(&connection, &category)
+        .await
+        .map_err(|e| HandlerError::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(())
+}
+
 async fn get_all_pictures(
     State(connection): State<PgPool>,
 ) -> Result<Json<Vec<Picture>>, HandlerError> {
@@ -180,6 +235,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
+        category::{Category, NewCategory},
         location::{Location, NewLocation},
         router::create_router,
     };
@@ -386,6 +442,217 @@ mod tests {
 
         assert_eq!(location2.name, "Kitchen".to_string());
         assert_eq!(location2.description, "Where i make food".to_string());
+
+        handle.abort();
+        assert!(handle.await.is_err());
+    }
+
+    #[sqlx::test]
+    pub async fn add_category(pool: PgPool) {
+        let router = create_router(pool);
+
+        let listener = tokio::net::TcpListener::bind("0.0.0.0:3005").await.unwrap();
+        let handle = tokio::spawn(async move {
+            axum::serve(listener, router).await.unwrap();
+        });
+
+        let client = reqwest::Client::new();
+
+        let category = NewCategory::new(
+            "Books".to_string(),
+            "Item where words are stored".to_string(),
+        );
+
+        client
+            .post("http://localhost:3005/api/categories")
+            .json(&category)
+            .send()
+            .await
+            .unwrap();
+
+        let categories: Vec<Category> = client
+            .get("http://localhost:3005/api/categories")
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+
+        let category = categories.first().unwrap();
+
+        assert_eq!(category.name, "Books".to_string());
+        assert_eq!(
+            category.description,
+            "Item where words are stored".to_string()
+        );
+
+        handle.abort();
+        assert!(handle.await.is_err());
+    }
+
+    #[sqlx::test]
+    pub async fn get_category_by_id(pool: PgPool) {
+        let router = create_router(pool);
+
+        let listener = tokio::net::TcpListener::bind("0.0.0.0:3006").await.unwrap();
+        let handle = tokio::spawn(async move {
+            axum::serve(listener, router).await.unwrap();
+        });
+
+        let client = reqwest::Client::new();
+
+        let category = NewLocation::new(
+            "Books".to_string(),
+            "Item where words are stored".to_string(),
+        );
+
+        client
+            .post("http://localhost:3006/api/categories")
+            .json(&category)
+            .send()
+            .await
+            .unwrap();
+
+        let category: Category = client
+            .get("http://localhost:3006/api/categories/1")
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+
+        assert_eq!(category.name, "Books".to_string());
+        assert_eq!(
+            category.description,
+            "Item where words are stored".to_string()
+        );
+
+        handle.abort();
+        assert!(handle.await.is_err());
+    }
+
+    #[sqlx::test]
+    pub async fn delete_category_by_id(pool: PgPool) {
+        let router = create_router(pool);
+
+        let listener = tokio::net::TcpListener::bind("0.0.0.0:3007").await.unwrap();
+        let handle = tokio::spawn(async move {
+            axum::serve(listener, router).await.unwrap();
+        });
+
+        let client = reqwest::Client::new();
+
+        let category = NewCategory::new(
+            "Books".to_string(),
+            "Item where words are stored".to_string(),
+        );
+
+        client
+            .post("http://localhost:3007/api/categories")
+            .json(&category)
+            .send()
+            .await
+            .unwrap();
+
+        let category: Category = client
+            .get("http://localhost:3007/api/categories/1")
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+
+        assert_eq!(category.name, "Books".to_string());
+        assert_eq!(
+            category.description,
+            "Item where words are stored".to_string()
+        );
+
+        client
+            .delete("http://localhost:3007/api/categories/1")
+            .send()
+            .await
+            .unwrap();
+
+        let categories: Vec<Category> = client
+            .get("http://localhost:3007/api/categories")
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+
+        assert_eq!(categories.iter().any(|category| category.id == 1), false);
+
+        handle.abort();
+        assert!(handle.await.is_err());
+    }
+
+    #[sqlx::test]
+    pub async fn update_category(pool: PgPool) {
+        let router = create_router(pool);
+
+        let listener = tokio::net::TcpListener::bind("0.0.0.0:3008").await.unwrap();
+        let handle = tokio::spawn(async move {
+            axum::serve(listener, router).await.unwrap();
+        });
+
+        let client = reqwest::Client::new();
+
+        let category = NewCategory::new(
+            "Books".to_string(),
+            "Item where words are stored".to_string(),
+        );
+
+        client
+            .post("http://localhost:3008/api/categories")
+            .json(&category)
+            .send()
+            .await
+            .unwrap();
+
+        let mut category: Category = client
+            .get("http://localhost:3008/api/categories/1")
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+
+        assert_eq!(category.name, "Books".to_string());
+        assert_eq!(
+            category.description,
+            "Item where words are stored".to_string()
+        );
+
+        category.description = "Item where words is stored".to_string();
+
+        client
+            .put("http://localhost:3008/api/categories")
+            .json(&category)
+            .send()
+            .await
+            .unwrap();
+
+        let category2: Category = client
+            .get("http://localhost:3008/api/categories/1")
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+
+        assert_eq!(category2.name, "Books".to_string());
+        assert_eq!(
+            category2.description,
+            "Item where words is stored".to_string()
+        );
 
         handle.abort();
         assert!(handle.await.is_err());
