@@ -4,13 +4,26 @@ use sqlx::{FromRow, PgPool};
 
 #[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct Location {
-    id: i32,
-    name: String,
-    description: String,
+    pub id: i32,
+    pub name: String,
+    pub description: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct NewLocation {
+    pub name: String,
+    pub description: String,
+}
+
+impl NewLocation {
+    /// Creates a new [`NewLocation`].
+    pub fn new(name: String, description: String) -> Self {
+        Self { name, description }
+    }
 }
 
 impl Location {
-    #[expect(dead_code)]
+    /// Reads all locations from database
     pub async fn read_from_db(pool: &PgPool) -> Result<Vec<Location>> {
         let locations = sqlx::query_as::<_, Location>("SELECT * FROM locations")
             .fetch_all(pool)
@@ -18,7 +31,7 @@ impl Location {
         Ok(locations)
     }
 
-    #[expect(dead_code)]
+    /// Reads a location by id from database
     pub async fn read_from_db_by_id(pool: &PgPool, id: i32) -> Result<Location> {
         let location = sqlx::query_as::<_, Location>("SELECT * FROM locations l WHERE l.id = $1")
             .bind(id)
@@ -27,7 +40,7 @@ impl Location {
         Ok(location)
     }
 
-    #[expect(dead_code)]
+    /// Insert location into database
     pub async fn insert_into_db(pool: &PgPool, name: &str, description: &str) -> Result<()> {
         sqlx::query("INSERT INTO locations (name, description) VALUES ($1, $2)")
             .bind(name)
@@ -37,7 +50,7 @@ impl Location {
         Ok(())
     }
 
-    #[expect(dead_code)]
+    /// Deletes a location from the database
     pub async fn delete_from_db(pool: &PgPool, id: i32) -> Result<()> {
         sqlx::query("DELETE FROM locations l WHERE l.id = $1")
             .bind(id)
@@ -46,7 +59,7 @@ impl Location {
         Ok(())
     }
 
-    #[expect(dead_code)]
+    /// Updates a location by id in the database
     pub async fn update_in_db(pool: &PgPool, location: &Location) -> Result<()> {
         sqlx::query("UPDATE locations SET name = $1, description = $2 WHERE id = $3")
             .bind(&location.name)
