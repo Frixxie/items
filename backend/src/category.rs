@@ -5,14 +5,26 @@ use sqlx::{FromRow, PgPool};
 /// Category for grouping items
 #[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct Category {
-    id: i32,
-    name: String,
-    description: String,
+    pub id: i32,
+    pub name: String,
+    pub description: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct NewCategory {
+    pub name: String,
+    pub description: String,
+}
+
+impl NewCategory {
+    /// Creates a new [`NewCategory`].
+    pub fn new(name: String, description: String) -> Self {
+        Self { name, description }
+    }
 }
 
 impl Category {
     /// Read all categories from the database
-    #[expect(dead_code)]
     pub async fn read_from_db(pool: &PgPool) -> Result<Vec<Category>> {
         let categories = sqlx::query_as::<_, Category>("SELECT * FROM categories")
             .fetch_all(pool)
@@ -21,7 +33,6 @@ impl Category {
     }
 
     /// Read category by id from the database
-    #[expect(dead_code)]
     pub async fn read_from_db_by_id(pool: &PgPool, id: i32) -> Result<Category> {
         let category = sqlx::query_as::<_, Category>("SELECT * FROM categories l WHERE l.id = $1")
             .bind(id)
@@ -31,7 +42,6 @@ impl Category {
     }
 
     /// Write category to database
-    #[expect(dead_code)]
     pub async fn insert_into_db(pool: &PgPool, name: &str, description: &str) -> Result<()> {
         sqlx::query("INSERT INTO categories (name, description) VALUES ($1, $2)")
             .bind(name)
@@ -42,7 +52,6 @@ impl Category {
     }
 
     /// Remove category from database
-    #[expect(dead_code)]
     pub async fn delete_from_db(pool: &PgPool, id: i32) -> Result<()> {
         sqlx::query("DELETE FROM categories l WHERE l.id = $1")
             .bind(id)
@@ -52,7 +61,6 @@ impl Category {
     }
 
     /// Update category in database
-    #[expect(dead_code)]
     pub async fn update_in_db(pool: &PgPool, category: &Category) -> Result<()> {
         sqlx::query("UPDATE categories SET name = $1, description = $2 WHERE id = $3")
             .bind(&category.name)
@@ -145,6 +153,9 @@ mod tests {
 
         let category2 = Category::read_from_db_by_id(&pool, 1).await.unwrap();
         assert_eq!(category2.name, "Books".to_string());
-        assert_eq!(category2.description, "Place where words with meaning are written".to_string());
+        assert_eq!(
+            category2.description,
+            "Place where words with meaning are written".to_string()
+        );
     }
 }
