@@ -1,4 +1,5 @@
 use anyhow::Result;
+use s3::{creds::Credentials, Bucket, BucketConfiguration, Region};
 use serde::{Deserialize, Serialize};
 use sha256::digest;
 use sqlx::{prelude::FromRow, PgPool};
@@ -45,7 +46,35 @@ impl Picture {
         picture: &[u8],
     ) -> Result<()> {
         let hash = digest(picture);
-        sqlx::query("INSERT INTO pictures (item_id, description, hash, object_storage_location) VALUES ($1, $2, $3, $4)").bind(item_id).bind(description).bind(hash).bind("Implement me!").execute(pool).await?;
+        // put_into_s3(item_id, hash, picture, )
+        sqlx::query("INSERT INTO pictures (item_id, description, hash, object_storage_location) VALUES ($1, $2, $3, $4)").bind(item_id).bind(description).bind(hash.clone()).bind(format!("item-{}/{}", item_id, hash)).execute(pool).await?;
+        Ok(())
+    }
+
+    pub async fn put_into_s3(
+        item_id: i32,
+        hash: String,
+        picture: &[u8],
+        credentials: Credentials,
+        region: Region,
+    ) -> Result<()> {
+        let bucket_name = format!("item-{}", item_id);
+
+        let bucket =
+            Bucket::new(&bucket_name, region.clone(), credentials.clone())?.with_path_style();
+
+        if !bucket.exists().await? {
+            Bucket::create_with_path_style(
+                &bucket_name,
+                region.clone(),
+                credentials.clone(),
+                BucketConfiguration::default(),
+            )
+            .await?;
+        }
+
+        bucket.put_object(hash, picture).await?;
+
         Ok(())
     }
 }
@@ -84,5 +113,32 @@ mod tests {
 
         assert_eq!(picture.id, 1);
         assert_eq!(picture.description, "Bilde av stol")
+    }
+
+    #[tokio::test]
+    pub async fn insert_into_s3() {
+        let credentials =
+            Credentials::new(Some("admin"), Some("adminadmin"), None, None, None).unwrap();
+        let region = Region::Custom {
+            region: "no".to_owned(),
+            endpoint: "http://localhost:9000".to_owned(),
+        };
+
+        let res = Picture::put_into_s3(
+            123,
+            "hei".to_string(),
+            &[1, 2, 3],
+            credentials.clone(),
+            region.clone(),
+        )
+        .await;
+        assert!(res.is_ok());
+
+        let bucket_name = format!("item-{}", 123);
+        let bucket = Bucket::new(&bucket_name, region.clone(), credentials.clone())
+            .unwrap()
+            .with_path_style();
+        let res = bucket.delete_object("hei").await;
+        assert!(res.is_ok());
     }
 }
