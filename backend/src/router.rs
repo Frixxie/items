@@ -17,7 +17,7 @@ use crate::{
     error::HandlerError,
     item::{Item, NewItem},
     location::{Location, NewLocation},
-    picture::Picture,
+    picture::PictureInfo,
 };
 
 pub async fn profile_endpoint(request: Request, next: Next) -> Response {
@@ -223,8 +223,8 @@ async fn update_category(
 
 async fn get_all_pictures(
     State(connection): State<PgPool>,
-) -> Result<Json<Vec<Picture>>, HandlerError> {
-    let pictures = Picture::read_from_db(&connection)
+) -> Result<Json<Vec<PictureInfo>>, HandlerError> {
+    let pictures = PictureInfo::read_from_db(&connection)
         .await
         .map_err(|e| HandlerError::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     Ok(Json(pictures))
