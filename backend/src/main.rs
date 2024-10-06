@@ -1,7 +1,7 @@
 mod error;
 mod item;
 mod location;
-mod picture;
+mod file;
 mod category;
 mod router;
 

@@ -1,4 +1,5 @@
 use axum::{
+    body::Bytes,
     extract::{Path, Request, State},
     http::StatusCode,
     middleware::{self, Next},
@@ -15,9 +16,9 @@ use tower_http::trace::TraceLayer;
 use crate::{
     category::{Category, NewCategory},
     error::HandlerError,
+    file::FileInfo,
     item::{Item, NewItem},
     location::{Location, NewLocation},
-    picture::Picture,
 };
 
 pub async fn profile_endpoint(request: Request, next: Next) -> Response {
@@ -44,21 +45,24 @@ pub fn create_router(connection: PgPool) -> Router {
     Router::new()
         .route("/status/health", get(status))
         .route("/api/items", get(get_all_items))
-        .route("/api/items/:user_id", get(get_item_by_id))
+        .route("/api/items/:id", get(get_item_by_id))
         .route("/api/items", post(add_item))
-        .route("/api/items/:user_id", delete(delete_item_by_id))
+        .route("/api/items/:id", delete(delete_item_by_id))
         .route("/api/items", put(update_item))
         .route("/api/locations", get(get_all_locations))
-        .route("/api/locations/:user_id", get(get_location_by_id))
+        .route("/api/locations/:id", get(get_location_by_id))
         .route("/api/locations", post(add_location))
-        .route("/api/locations/:user_id", delete(delete_location_by_id))
+        .route("/api/locations/:id", delete(delete_location_by_id))
         .route("/api/locations", put(update_location))
         .route("/api/categories", get(get_all_categories))
-        .route("/api/categories/:user_id", get(get_category_by_id))
+        .route("/api/categories/:id", get(get_category_by_id))
         .route("/api/categories", post(add_category))
-        .route("/api/categories/:user_id", delete(delete_category_by_id))
+        .route("/api/categories/:id", delete(delete_category_by_id))
         .route("/api/categories", put(update_category))
-        .route("/api/pictures", get(get_all_pictures))
+        .route("/api/files/:id", get(get_file_by_id))
+        .route("/api/files", post(add_file))
+        .route("/api/files/:id", delete(delete_file_by_id))
+        .route("/api/file_infos", get(get_all_files))
         .with_state(connection)
         .layer(
             ServiceBuilder::new()
@@ -221,13 +225,40 @@ async fn update_category(
     Ok(())
 }
 
-async fn get_all_pictures(
+async fn get_file_by_id(
     State(connection): State<PgPool>,
-) -> Result<Json<Vec<Picture>>, HandlerError> {
-    let pictures = Picture::read_from_db(&connection)
+    Path(file_id): Path<i32>,
+) -> Result<Bytes, HandlerError> {
+    let file = FileInfo::get_file_by_id(&connection, file_id)
         .await
         .map_err(|e| HandlerError::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    Ok(Json(pictures))
+    Ok(file.into())
+}
+
+async fn add_file(State(connection): State<PgPool>, payload: Bytes) -> Result<(), HandlerError> {
+    FileInfo::insert_into_db(&connection, &payload)
+        .await
+        .map_err(|e| HandlerError::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(())
+}
+
+async fn delete_file_by_id(
+    State(connection): State<PgPool>,
+    Path(file_id): Path<i32>,
+) -> Result<(), HandlerError> {
+    FileInfo::delete_from_db(&connection, file_id)
+        .await
+        .map_err(|e| HandlerError::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(())
+}
+
+async fn get_all_files(
+    State(connection): State<PgPool>,
+) -> Result<Json<Vec<FileInfo>>, HandlerError> {
+    let files = FileInfo::read_from_db(&connection)
+        .await
+        .map_err(|e| HandlerError::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(Json(files))
 }
 
 #[cfg(test)]
