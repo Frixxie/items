@@ -33,10 +33,33 @@ impl PictureInfo {
     }
 
     pub async fn read_from_db(pool: &PgPool) -> Result<Vec<PictureInfo>> {
-        let items = sqlx::query_as::<_, PictureInfo>("SELECT * FROM pictures")
+        let pictures = sqlx::query_as::<_, PictureInfo>("SELECT * FROM pictures")
             .fetch_all(pool)
             .await?;
-        Ok(items)
+        Ok(pictures)
+    }
+
+    pub async fn read_from_db_and_s3_by_id(
+        pool: &PgPool,
+        item_id: i32,
+        id: i32,
+    ) -> Result<Picture> {
+        let (credentials, region) = Self::get_s3_credentials()?;
+        let picture_info = sqlx::query_as::<_, PictureInfo>(
+            "SELECT * FROM pictures WHERE item_id = ($1) and id = ($2)",
+        )
+        .bind(item_id)
+        .bind(id)
+        .fetch_one(pool)
+        .await?;
+        let picture = Self::get_from_s3(
+            picture_info.item_id,
+            &picture_info.hash,
+            credentials.clone(),
+            region.clone(),
+        )
+        .await?;
+        Ok(picture)
     }
 
     pub async fn read_from_db_and_s3(pool: &PgPool) -> Result<Vec<(PictureInfo, Picture)>> {
