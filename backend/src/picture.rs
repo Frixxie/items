@@ -39,19 +39,36 @@ impl PictureInfo {
         Ok(pictures)
     }
 
+    //TODO: Continue here, ids are messed up
+    pub async fn update_in_db(pool: &PgPool, picture_info: PictureInfo) -> Result<()> {
+        sqlx::query("UPDATE pictures SET item_id = $1, description = $2, hash = $3, object_storage_location = $4 WHERE id = $5")
+            .bind(picture_info.item_id)
+            .bind(picture_info.description)
+            .bind(picture_info.hash)
+            .bind(picture_info.id)
+            .execute(pool)
+            .await?;
+        Ok(())
+    }
+
+    pub async fn read_from_db_by_ids(pool: &PgPool, item_id: i32, id: i32) -> Result<PictureInfo> {
+        let picture_info = sqlx::query_as::<_, PictureInfo>(
+            "SELECT * FROM pictures WHERE item_id = $1 and id = $2",
+        )
+        .bind(item_id)
+        .bind(id)
+        .fetch_one(pool)
+        .await?;
+        Ok(picture_info)
+    }
+
     pub async fn read_from_db_and_s3_by_id(
         pool: &PgPool,
         item_id: i32,
         id: i32,
     ) -> Result<Picture> {
         let (credentials, region) = Self::get_s3_credentials()?;
-        let picture_info = sqlx::query_as::<_, PictureInfo>(
-            "SELECT * FROM pictures WHERE item_id = ($1) and id = ($2)",
-        )
-        .bind(item_id)
-        .bind(id)
-        .fetch_one(pool)
-        .await?;
+        let picture_info = Self::read_from_db_by_ids(pool, item_id, id).await?;
         let picture = Self::get_from_s3(
             picture_info.item_id,
             &picture_info.hash,
@@ -60,6 +77,44 @@ impl PictureInfo {
         )
         .await?;
         Ok(picture)
+    }
+
+    pub async fn delete_from_db_and_s3_by_id(pool: &PgPool, item_id: i32, id: i32) -> Result<()> {
+        let (credentials, region) = Self::get_s3_credentials()?;
+        let picture_info = Self::read_from_db_by_ids(pool, item_id, id).await?;
+        sqlx::query("DELETE FROM pictures WHERE item_id = $1 and id = $2")
+            .bind(item_id)
+            .bind(id)
+            .execute(pool)
+            .await?;
+        Self::delete_from_s3(item_id, &picture_info.hash, credentials, region).await?;
+        Ok(())
+    }
+
+    pub async fn update_from_db_and_s3_by_id(
+        pool: &PgPool,
+        item_id: i32,
+        id: i32,
+        picture: Picture,
+    ) -> Result<()> {
+        let (credentials, region) = Self::get_s3_credentials()?;
+        let picture_info = Self::read_from_db_by_ids(pool, item_id, id).await?;
+        Self::delete_from_s3(
+            item_id,
+            &picture_info.hash,
+            credentials.clone(),
+            region.clone(),
+        )
+        .await?;
+        Self::put_into_s3(
+            item_id,
+            &picture_info.hash,
+            &picture,
+            credentials.clone(),
+            region.clone(),
+        )
+        .await?;
+        Ok(())
     }
 
     pub async fn read_from_db_and_s3(pool: &PgPool) -> Result<Vec<(PictureInfo, Picture)>> {

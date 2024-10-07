@@ -18,7 +18,7 @@ use crate::{
     error::HandlerError,
     item::{Item, NewItem},
     location::{Location, NewLocation},
-    picture::{Picture, PictureInfo},
+    picture::PictureInfo,
 };
 
 pub async fn profile_endpoint(request: Request, next: Next) -> Response {
@@ -47,13 +47,21 @@ pub fn create_router(connection: PgPool) -> Router {
         .route("/api/items", get(get_all_items))
         .route("/api/items/:id", get(get_item_by_id))
         .route("/api/items", post(add_item))
+        .route("/api/items/:id", delete(delete_item_by_id))
+        .route("/api/items", put(update_item))
         .route(
             "/api/items/:item_id/pictures/:picture_id",
             get(get_picture_by_id),
         )
+        .route(
+            "/api/items/:item_id/pictures/:picture_id",
+            delete(delete_picture_by_id),
+        )
+        .route(
+            "/api/items/:item_id/pictures/:picture_id",
+            put(update_picture_by_id),
+        )
         .route("/api/items/:id/pictures", post(add_picture))
-        .route("/api/items/:id", delete(delete_item_by_id))
-        .route("/api/items", put(update_item))
         .route("/api/locations", get(get_all_locations))
         .route("/api/locations/:id", get(get_location_by_id))
         .route("/api/locations", post(add_location))
@@ -64,7 +72,8 @@ pub fn create_router(connection: PgPool) -> Router {
         .route("/api/categories", post(add_category))
         .route("/api/categories/:id", delete(delete_category_by_id))
         .route("/api/categories", put(update_category))
-        .route("/api/pictureinfos", get(get_all_picture_infos))
+        .route("/api/picture_infos", get(get_all_picture_infos))
+        .route("/api/picture_infos", put(update_picture_info))
         .with_state(connection)
         .layer(
             ServiceBuilder::new()
@@ -236,6 +245,16 @@ async fn get_all_picture_infos(
     Ok(Json(pictures))
 }
 
+async fn update_picture_info(
+    State(connection): State<PgPool>,
+    Json(picture_info): Json<PictureInfo>,
+) -> Result<(), HandlerError> {
+    PictureInfo::update_in_db(&connection, picture_info)
+        .await
+        .map_err(|e| HandlerError::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(())
+}
+
 async fn add_picture(
     State(connection): State<PgPool>,
     Path(item_id): Path<i32>,
@@ -252,6 +271,18 @@ async fn add_picture(
     Ok(())
 }
 
+async fn update_picture_by_id(
+    State(connection): State<PgPool>,
+    Path(item_id): Path<i32>,
+    Path(picture_id): Path<i32>,
+    payload: Bytes,
+) -> Result<(), HandlerError> {
+    PictureInfo::update_from_db_and_s3_by_id(&connection, item_id, picture_id, payload.to_vec())
+        .await
+        .map_err(|e| HandlerError::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(())
+}
+
 async fn get_picture_by_id(
     State(connection): State<PgPool>,
     Path(item_id): Path<i32>,
@@ -261,6 +292,17 @@ async fn get_picture_by_id(
         .await
         .map_err(|e| HandlerError::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     Ok(Bytes::copy_from_slice(&picture))
+}
+
+async fn delete_picture_by_id(
+    State(connection): State<PgPool>,
+    Path(item_id): Path<i32>,
+    Path(picture_id): Path<i32>,
+) -> Result<(), HandlerError> {
+    PictureInfo::delete_from_db_and_s3_by_id(&connection, item_id, picture_id)
+        .await
+        .map_err(|e| HandlerError::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(())
 }
 
 #[cfg(test)]
