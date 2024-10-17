@@ -18,7 +18,7 @@ use crate::{
     error::HandlerError,
     file::FileInfo,
     item::{Item, NewItem},
-    location::{Location, NewLocation},
+    location::{Location, NewLocation}
 };
 
 pub async fn profile_endpoint(request: Request, next: Next) -> Response {
