@@ -22,7 +22,7 @@ pub struct Opts {
         short,
         long,
         env = "DATABASE_URL",
-        default_value = "postgres://postgres:example@server:5432/postgres"
+        default_value = "postgresql://postgres:admin@localhost:5432/postgres"
     )]
     db_url: String,
 
