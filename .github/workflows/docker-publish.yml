@@ -1,8 +1,6 @@
 name: Make
 
 on:
-  schedule:
-    - cron: '23 12 * * *'
   push:
     branches: [ "master" ]
     # Publish semver tags as releases.
@@ -13,7 +11,7 @@ env:
 
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
@@ -21,9 +19,5 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: make build
-        run: make build
-      - name: make test
-        run: make test
-      - name: make container
-        run: make container
+      - name: docker push
+        run: make publish_containers
