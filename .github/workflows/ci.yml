@@ -1,9 +1,6 @@
 name: ci
 
-on:
-  schedule:
-    - cron: '23 12 * * *'
-  push
+on: [push]
 
 env:
   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
@@ -11,7 +8,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       packages: write
@@ -19,7 +16,5 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: make build
-        run: make build
       - name: make test
         run: make test
