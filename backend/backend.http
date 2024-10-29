@@ -1,17 +1,16 @@
 GET http://localhost:3000/status/health
-200 OK
 
 ###
 
 GET http://localhost:3000/api/items
-200 OK
 
 ###
 
-GET http://localhost:3000/api/pictures
-200 OK
+POST http://localhost:3000/api/items
+Content-Type: application/json
 
-###
-
-GET http://localhost:3000/api/gifters
-200 OK
+{
+ "name": "test-item",
+ "description": "Experimenal",
+ "date_origin": "2024-10-20T10:57:27Z"
+}

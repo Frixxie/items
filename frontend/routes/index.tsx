@@ -1,25 +1,43 @@
-import { useSignal } from "@preact/signals";
-import Counter from "../islands/Counter.tsx";
+import type { Handlers, PageProps } from "$fresh/server.ts";
 
-export default function Home() {
-  const count = useSignal(3);
-  return (
-    <div class="px-4 py-8 mx-auto bg-[#86efac]">
-      <div class="max-w-screen-md mx-auto flex flex-col items-center justify-center">
-        <img
-          class="my-6"
-          src="/logo.svg"
-          width="128"
-          height="128"
-          alt="the Fresh logo: a sliced lemon dripping with juice"
-        />
-        <h1 class="text-4xl font-bold">Welcome to Fresh</h1>
-        <p class="my-4">
-          Try updating this message in the
-          <code class="mx-2">./routes/index.tsx</code> file, and refresh.
-        </p>
-        <Counter count={count} />
-      </div>
-    </div>
-  );
+interface Item {
+    id: number;
+    name: string;
+    description: string;
+    date_origin: Date;
+}
+
+export const handler: Handlers<Item[]> = {
+    async GET(_req, ctx) {
+        const items: Item[] = await fetch("http://localhost:3000/api/items")
+            .then((res) => res.json());
+        return ctx.render(items);
+    },
+};
+
+export default function Items(props: PageProps<Item[]>) {
+    return (
+        <div>
+            <table class="table-auto">
+                <thead>
+                    <tr>
+                        <th class="border px-4 py-2">ID</th>
+                        <th class="border px-4 py-2">Name</th>
+                        <th class="border px-4 py-2">Description</th>
+                        <th class="border px-4 py-2">Date Origin</th>
+                    </tr>
+                </thead>
+                <thead>
+                    {props.data.map((item) => (
+                        <tr>
+                            <td class="border px-4 py-2">{item.id}</td>
+                            <td class="border px-4 py-2">{item.name}</td>
+                            <td class="border px-4 py-2">{item.description}</td>
+                            <td class="border px-4 py-2">{item.date_origin}</td>
+                        </tr>
+                    ))}
+                </thead>
+            </table>
+        </div>
+    );
 }
