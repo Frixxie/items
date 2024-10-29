@@ -18,16 +18,26 @@ export const handler: Handlers<Item[]> = {
 export default function Items(props: PageProps<Item[]>) {
     return (
         <div>
-            <h1>Items</h1>
-            <ul>
-                {props.data.map((item) => (
-                    <li key={item.id}>
-                        <h2>{item.name}</h2>
-                        <p>{item.description}</p>
-                        <p>{item.date_origin}</p>
-                    </li>
-                ))}
-            </ul>
+            <table class="table-auto">
+                <thead>
+                    <tr>
+                        <th class="border px-4 py-2">ID</th>
+                        <th class="border px-4 py-2">Name</th>
+                        <th class="border px-4 py-2">Description</th>
+                        <th class="border px-4 py-2">Date Origin</th>
+                    </tr>
+                </thead>
+                <thead>
+                    {props.data.map((item) => (
+                        <tr>
+                            <td class="border px-4 py-2">{item.id}</td>
+                            <td class="border px-4 py-2">{item.name}</td>
+                            <td class="border px-4 py-2">{item.description}</td>
+                            <td class="border px-4 py-2">{item.date_origin}</td>
+                        </tr>
+                    ))}
+                </thead>
+            </table>
         </div>
     );
 }
