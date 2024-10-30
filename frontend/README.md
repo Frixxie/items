@@ -3,14 +3,16 @@
 Your new Fresh project is ready to go. You can follow the Fresh "Getting
 Started" guide here: https://fresh.deno.dev/docs/getting-started
 
-### Usage
+## Setup Instructions
 
-Make sure to install Deno: https://deno.land/manual/getting_started/installation
+### Frontend
 
-Then start the project:
+1. Install Deno: https://deno.land/manual/getting_started/installation
+2. Navigate to the frontend directory: `cd frontend`
+3. Start the frontend: `deno task start`
 
-```
-deno task start
-```
+## Usage Examples
 
-This will watch the project directory and restart as necessary.
+### Frontend
+
+- Open your browser and navigate to `http://localhost:8000` to view the frontend.
