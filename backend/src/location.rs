@@ -2,6 +2,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgPool};
 
+/// Represents a location with its details.
 #[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct Location {
     pub id: i32,
@@ -9,6 +10,7 @@ pub struct Location {
     pub description: String,
 }
 
+/// Represents a new location to be added.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct NewLocation {
     pub name: String,
@@ -23,7 +25,7 @@ impl NewLocation {
 }
 
 impl Location {
-    /// Reads all locations from database
+    /// Reads all locations from the database.
     pub async fn read_from_db(pool: &PgPool) -> Result<Vec<Location>> {
         let locations = sqlx::query_as::<_, Location>("SELECT * FROM locations")
             .fetch_all(pool)
@@ -31,7 +33,7 @@ impl Location {
         Ok(locations)
     }
 
-    /// Reads a location by id from database
+    /// Reads a location by id from the database.
     pub async fn read_from_db_by_id(pool: &PgPool, id: i32) -> Result<Location> {
         let location = sqlx::query_as::<_, Location>("SELECT * FROM locations l WHERE l.id = $1")
             .bind(id)
@@ -40,7 +42,7 @@ impl Location {
         Ok(location)
     }
 
-    /// Insert location into database
+    /// Inserts a new location into the database.
     pub async fn insert_into_db(pool: &PgPool, name: &str, description: &str) -> Result<()> {
         sqlx::query("INSERT INTO locations (name, description) VALUES ($1, $2)")
             .bind(name)
@@ -50,7 +52,7 @@ impl Location {
         Ok(())
     }
 
-    /// Deletes a location from the database
+    /// Deletes a location from the database by id.
     pub async fn delete_from_db(pool: &PgPool, id: i32) -> Result<()> {
         sqlx::query("DELETE FROM locations l WHERE l.id = $1")
             .bind(id)
@@ -59,7 +61,7 @@ impl Location {
         Ok(())
     }
 
-    /// Updates a location by id in the database
+    /// Updates a location in the database by id.
     pub async fn update_in_db(pool: &PgPool, location: &Location) -> Result<()> {
         sqlx::query("UPDATE locations SET name = $1, description = $2 WHERE id = $3")
             .bind(&location.name)

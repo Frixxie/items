@@ -21,6 +21,7 @@ use crate::{
     location::{Location, NewLocation}
 };
 
+/// Middleware to log the request method and URI, and measure the time taken to handle the request.
 pub async fn profile_endpoint(request: Request, next: Next) -> Response {
     let method = request.method().clone().to_string();
     let uri = request.uri().clone();
@@ -41,6 +42,7 @@ pub async fn profile_endpoint(request: Request, next: Next) -> Response {
     response
 }
 
+/// Creates the router with all the routes and middleware.
 pub fn create_router(connection: PgPool) -> Router {
     Router::new()
         .route("/status/health", get(status))
@@ -71,10 +73,12 @@ pub fn create_router(connection: PgPool) -> Router {
         )
 }
 
+/// Health check endpoint.
 async fn status() -> (StatusCode, String) {
     (StatusCode::OK, "Healthy".to_string())
 }
 
+/// Retrieves all items from the database.
 async fn get_all_items(State(connection): State<PgPool>) -> Result<Json<Vec<Item>>, HandlerError> {
     let items = Item::read_from_db(&connection)
         .await
@@ -82,6 +86,7 @@ async fn get_all_items(State(connection): State<PgPool>) -> Result<Json<Vec<Item
     Ok(Json(items))
 }
 
+/// Retrieves an item by its ID from the database.
 async fn get_item_by_id(
     State(connection): State<PgPool>,
     Path(item_id): Path<i32>,
@@ -92,6 +97,7 @@ async fn get_item_by_id(
     Ok(Json(item))
 }
 
+/// Adds a new item to the database.
 async fn add_item(
     State(connection): State<PgPool>,
     Json(payload): Json<NewItem>,
@@ -107,6 +113,7 @@ async fn add_item(
     Ok(())
 }
 
+/// Deletes an item by its ID from the database.
 async fn delete_item_by_id(
     State(connection): State<PgPool>,
     Path(item_id): Path<i32>,
@@ -117,6 +124,7 @@ async fn delete_item_by_id(
     Ok(())
 }
 
+/// Updates an item in the database.
 async fn update_item(
     State(connection): State<PgPool>,
     Json(item): Json<Item>,
@@ -127,6 +135,7 @@ async fn update_item(
     Ok(())
 }
 
+/// Retrieves all locations from the database.
 async fn get_all_locations(
     State(connection): State<PgPool>,
 ) -> Result<Json<Vec<Location>>, HandlerError> {
@@ -136,6 +145,7 @@ async fn get_all_locations(
     Ok(Json(locations))
 }
 
+/// Retrieves a location by its ID from the database.
 async fn get_location_by_id(
     State(connection): State<PgPool>,
     Path(location_id): Path<i32>,
@@ -146,6 +156,7 @@ async fn get_location_by_id(
     Ok(Json(location))
 }
 
+/// Adds a new location to the database.
 async fn add_location(
     State(connection): State<PgPool>,
     Json(payload): Json<NewLocation>,
@@ -156,6 +167,7 @@ async fn add_location(
     Ok(())
 }
 
+/// Deletes a location by its ID from the database.
 async fn delete_location_by_id(
     State(connection): State<PgPool>,
     Path(location_id): Path<i32>,
@@ -166,6 +178,7 @@ async fn delete_location_by_id(
     Ok(())
 }
 
+/// Updates a location in the database.
 async fn update_location(
     State(connection): State<PgPool>,
     Json(location): Json<Location>,
@@ -176,6 +189,7 @@ async fn update_location(
     Ok(())
 }
 
+/// Retrieves all categories from the database.
 async fn get_all_categories(
     State(connection): State<PgPool>,
 ) -> Result<Json<Vec<Category>>, HandlerError> {
@@ -185,6 +199,7 @@ async fn get_all_categories(
     Ok(Json(categories))
 }
 
+/// Retrieves a category by its ID from the database.
 async fn get_category_by_id(
     State(connection): State<PgPool>,
     Path(category_id): Path<i32>,
@@ -195,6 +210,7 @@ async fn get_category_by_id(
     Ok(Json(category))
 }
 
+/// Adds a new category to the database.
 async fn add_category(
     State(connection): State<PgPool>,
     Json(payload): Json<NewCategory>,
@@ -205,6 +221,7 @@ async fn add_category(
     Ok(())
 }
 
+/// Deletes a category by its ID from the database.
 async fn delete_category_by_id(
     State(connection): State<PgPool>,
     Path(category_id): Path<i32>,
@@ -215,6 +232,7 @@ async fn delete_category_by_id(
     Ok(())
 }
 
+/// Updates a category in the database.
 async fn update_category(
     State(connection): State<PgPool>,
     Json(category): Json<Category>,
@@ -225,6 +243,7 @@ async fn update_category(
     Ok(())
 }
 
+/// Retrieves a file by its ID from the database and S3.
 async fn get_file_by_id(
     State(connection): State<PgPool>,
     Path(file_id): Path<i32>,
@@ -235,6 +254,7 @@ async fn get_file_by_id(
     Ok(file.into())
 }
 
+/// Adds a new file to the database and S3.
 async fn add_file(State(connection): State<PgPool>, payload: Bytes) -> Result<(), HandlerError> {
     FileInfo::insert_into_db(&connection, &payload)
         .await
@@ -242,6 +262,7 @@ async fn add_file(State(connection): State<PgPool>, payload: Bytes) -> Result<()
     Ok(())
 }
 
+/// Deletes a file by its ID from the database and S3.
 async fn delete_file_by_id(
     State(connection): State<PgPool>,
     Path(file_id): Path<i32>,
@@ -252,6 +273,7 @@ async fn delete_file_by_id(
     Ok(())
 }
 
+/// Retrieves all file information from the database.
 async fn get_all_files(
     State(connection): State<PgPool>,
 ) -> Result<Json<Vec<FileInfo>>, HandlerError> {

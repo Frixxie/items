@@ -6,16 +6,19 @@ use sqlx::{prelude::FromRow, PgPool};
 
 static BUCKET_NAME: &'static str = "files";
 
+/// Generates a file name based on the id and hash.
 fn file_name(id: i32, hash: &str) -> String {
     format!("{}-{}", id, hash)
 }
 
+/// Retrieves S3 credentials from the environment.
 fn get_s3_credentials() -> Result<(Credentials, Region)> {
     Ok((Credentials::default()?, Region::from_default_env()?))
 }
 
 type Content = Vec<u8>;
 
+/// Represents a file with its content.
 #[derive(Debug)]
 pub struct File {
     content: Content,
@@ -27,6 +30,7 @@ impl File {
         Self { content }
     }
 
+    /// Uploads the file to S3.
     pub async fn put_into_s3(
         &self,
         id: i32,
@@ -54,6 +58,7 @@ impl File {
         Ok(())
     }
 
+    /// Retrieves the file from S3.
     pub async fn get_from_s3(
         id: i32,
         hash: &str,
@@ -68,6 +73,7 @@ impl File {
         Ok(Self::new(result.into()))
     }
 
+    /// Deletes the file from S3.
     pub async fn delete_from_s3(
         id: i32,
         hash: &str,
@@ -84,6 +90,7 @@ impl File {
     }
 }
 
+/// Represents file information stored in the database.
 #[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct FileInfo {
     id: i32,
@@ -101,10 +108,9 @@ impl FileInfo {
         }
     }
 
-    /// Inserts content into S3 and database
+    /// Inserts content into S3 and database.
     ///
     /// # Errors
-    ///
     ///
     /// This function will return an error if S3 or DB is unavailable.
     pub async fn insert_into_db(pool: &PgPool, content: &[u8]) -> Result<()> {
@@ -124,6 +130,7 @@ impl FileInfo {
         Ok(())
     }
 
+    /// Reads all file information from the database.
     pub async fn read_from_db(pool: &PgPool) -> Result<Vec<FileInfo>> {
         let files = sqlx::query_as::<_, FileInfo>("SELECT * FROM files")
             .fetch_all(pool)
@@ -131,6 +138,7 @@ impl FileInfo {
         Ok(files)
     }
 
+    /// Deletes file information from the database and S3.
     pub async fn delete_from_db(pool: &PgPool, id: i32) -> Result<()> {
         let file_info = Self::read_from_db_by_id(pool, id).await?;
         let (credentials, region) = get_s3_credentials()?;
@@ -142,6 +150,7 @@ impl FileInfo {
         Ok(())
     }
 
+    /// Reads file information by id from the database.
     pub async fn read_from_db_by_id(pool: &PgPool, id: i32) -> Result<FileInfo> {
         let file_info = sqlx::query_as::<_, FileInfo>("SELECT * FROM files WHERE id = $1")
             .bind(id)
@@ -150,6 +159,7 @@ impl FileInfo {
         Ok(file_info)
     }
 
+    /// Retrieves file content by id from the database and S3.
     pub async fn get_file_by_id(pool: &PgPool, id: i32) -> Result<Content> {
         let file_info = Self::read_from_db_by_id(pool, id).await?;
         let (credentials, region) = get_s3_credentials()?;
@@ -157,6 +167,7 @@ impl FileInfo {
         Ok(file.content)
     }
 
+    /// Reads all file information from the database and retrieves the corresponding files from S3.
     pub async fn read_from_db_and_s3(pool: &PgPool) -> Result<Vec<(FileInfo, File)>> {
         let (credentials, region) = get_s3_credentials()?;
         let file_infos = sqlx::query_as::<_, FileInfo>("SELECT * FROM files")
