@@ -7,20 +7,21 @@ use axum::{
     routing::{delete, get, post, put},
     Json, Router,
 };
-use log::info;
 use sqlx::PgPool;
 use tokio::time::Instant;
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
+use tracing::{info, instrument};
 
 use crate::{
     category::{Category, NewCategory},
     error::HandlerError,
     file::FileInfo,
     item::{Item, NewItem},
-    location::{Location, NewLocation}
+    location::{Location, NewLocation},
 };
 
+#[instrument]
 pub async fn profile_endpoint(request: Request, next: Next) -> Response {
     let method = request.method().clone().to_string();
     let uri = request.uri().clone();
@@ -71,10 +72,12 @@ pub fn create_router(connection: PgPool) -> Router {
         )
 }
 
+#[instrument]
 async fn status() -> (StatusCode, String) {
     (StatusCode::OK, "Healthy".to_string())
 }
 
+#[instrument]
 async fn get_all_items(State(connection): State<PgPool>) -> Result<Json<Vec<Item>>, HandlerError> {
     let items = Item::read_from_db(&connection)
         .await
@@ -82,6 +85,7 @@ async fn get_all_items(State(connection): State<PgPool>) -> Result<Json<Vec<Item
     Ok(Json(items))
 }
 
+#[instrument]
 async fn get_item_by_id(
     State(connection): State<PgPool>,
     Path(item_id): Path<i32>,
@@ -92,6 +96,7 @@ async fn get_item_by_id(
     Ok(Json(item))
 }
 
+#[instrument]
 async fn add_item(
     State(connection): State<PgPool>,
     Json(payload): Json<NewItem>,
@@ -107,6 +112,7 @@ async fn add_item(
     Ok(())
 }
 
+#[instrument]
 async fn delete_item_by_id(
     State(connection): State<PgPool>,
     Path(item_id): Path<i32>,
@@ -117,6 +123,7 @@ async fn delete_item_by_id(
     Ok(())
 }
 
+#[instrument]
 async fn update_item(
     State(connection): State<PgPool>,
     Json(item): Json<Item>,
@@ -127,6 +134,7 @@ async fn update_item(
     Ok(())
 }
 
+#[instrument]
 async fn get_all_locations(
     State(connection): State<PgPool>,
 ) -> Result<Json<Vec<Location>>, HandlerError> {
@@ -136,6 +144,7 @@ async fn get_all_locations(
     Ok(Json(locations))
 }
 
+#[instrument]
 async fn get_location_by_id(
     State(connection): State<PgPool>,
     Path(location_id): Path<i32>,
@@ -146,6 +155,7 @@ async fn get_location_by_id(
     Ok(Json(location))
 }
 
+#[instrument]
 async fn add_location(
     State(connection): State<PgPool>,
     Json(payload): Json<NewLocation>,
@@ -156,6 +166,7 @@ async fn add_location(
     Ok(())
 }
 
+#[instrument]
 async fn delete_location_by_id(
     State(connection): State<PgPool>,
     Path(location_id): Path<i32>,
@@ -166,6 +177,7 @@ async fn delete_location_by_id(
     Ok(())
 }
 
+#[instrument]
 async fn update_location(
     State(connection): State<PgPool>,
     Json(location): Json<Location>,
@@ -176,6 +188,7 @@ async fn update_location(
     Ok(())
 }
 
+#[instrument]
 async fn get_all_categories(
     State(connection): State<PgPool>,
 ) -> Result<Json<Vec<Category>>, HandlerError> {
@@ -185,6 +198,7 @@ async fn get_all_categories(
     Ok(Json(categories))
 }
 
+#[instrument]
 async fn get_category_by_id(
     State(connection): State<PgPool>,
     Path(category_id): Path<i32>,
@@ -195,6 +209,7 @@ async fn get_category_by_id(
     Ok(Json(category))
 }
 
+#[instrument]
 async fn add_category(
     State(connection): State<PgPool>,
     Json(payload): Json<NewCategory>,
@@ -205,6 +220,7 @@ async fn add_category(
     Ok(())
 }
 
+#[instrument]
 async fn delete_category_by_id(
     State(connection): State<PgPool>,
     Path(category_id): Path<i32>,
@@ -215,6 +231,7 @@ async fn delete_category_by_id(
     Ok(())
 }
 
+#[instrument]
 async fn update_category(
     State(connection): State<PgPool>,
     Json(category): Json<Category>,
@@ -225,6 +242,7 @@ async fn update_category(
     Ok(())
 }
 
+#[instrument]
 async fn get_file_by_id(
     State(connection): State<PgPool>,
     Path(file_id): Path<i32>,
@@ -235,6 +253,7 @@ async fn get_file_by_id(
     Ok(file.into())
 }
 
+#[instrument]
 async fn add_file(State(connection): State<PgPool>, payload: Bytes) -> Result<(), HandlerError> {
     FileInfo::insert_into_db(&connection, &payload)
         .await
@@ -242,6 +261,7 @@ async fn add_file(State(connection): State<PgPool>, payload: Bytes) -> Result<()
     Ok(())
 }
 
+#[instrument]
 async fn delete_file_by_id(
     State(connection): State<PgPool>,
     Path(file_id): Path<i32>,
@@ -252,6 +272,7 @@ async fn delete_file_by_id(
     Ok(())
 }
 
+#[instrument]
 async fn get_all_files(
     State(connection): State<PgPool>,
 ) -> Result<Json<Vec<FileInfo>>, HandlerError> {

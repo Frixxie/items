@@ -1,17 +1,15 @@
+mod category;
 mod error;
+mod file;
 mod item;
 mod location;
-mod file;
-mod category;
 mod router;
 
-use std::str::FromStr;
-
 use anyhow::Result;
-use log::info;
-use simple_logger::SimpleLogger;
 use sqlx::PgPool;
 use structopt::StructOpt;
+use tracing::{info, Level};
+use tracing_subscriber::FmtSubscriber;
 
 #[derive(Debug, Clone, StructOpt)]
 pub struct Opts {
@@ -33,9 +31,12 @@ pub struct Opts {
 #[tokio::main]
 async fn main() -> Result<()> {
     let opts = Opts::from_args();
-    SimpleLogger::new()
-        .with_level(log::LevelFilter::from_str(&opts.log_level)?)
-        .init()?;
+    let subscriber = FmtSubscriber::builder()
+        .with_max_level(Level::INFO)
+        .json()
+        .finish();
+
+    tracing::subscriber::set_global_default(subscriber).unwrap();
 
     info!("Connecting to DB at {}", opts.db_url);
     let connection = PgPool::connect(&opts.db_url).await.unwrap();
