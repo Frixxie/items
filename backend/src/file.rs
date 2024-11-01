@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use sha256::digest;
 use sqlx::{prelude::FromRow, PgPool};
 
-static BUCKET_NAME: &'static str = "files";
+static BUCKET_NAME: &str = "files";
 
 fn file_name(id: i32, hash: &str) -> String {
     format!("{}-{}", id, hash)

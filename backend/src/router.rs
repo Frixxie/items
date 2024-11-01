@@ -295,13 +295,9 @@ async fn get_all_files(
 
 #[cfg(test)]
 mod tests {
-    use sqlx::PgPool;
+    
 
-    use crate::{
-        category::{Category, NewCategory},
-        location::{Location, NewLocation},
-        router::create_router,
-    };
+    
 
     //TODO: Replace tests
 
