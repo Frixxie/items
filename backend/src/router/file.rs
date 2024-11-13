@@ -7,7 +7,9 @@ use axum::{
 use sqlx::PgPool;
 use tracing::instrument;
 
-use crate::{error::HandlerError, file::FileInfo};
+use crate::file::FileInfo;
+
+use super::error::HandlerError;
 
 #[instrument]
 pub async fn get_file_by_id(

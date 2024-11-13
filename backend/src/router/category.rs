@@ -6,10 +6,9 @@ use axum::{
 use sqlx::PgPool;
 use tracing::instrument;
 
-use crate::{
-    category::{Category, NewCategory},
-    error::HandlerError,
-};
+use crate::category::{Category, NewCategory};
+
+use super::error::HandlerError;
 
 #[instrument]
 pub async fn get_all_categories(

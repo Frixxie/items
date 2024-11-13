@@ -6,10 +6,9 @@ use axum::{
 use sqlx::PgPool;
 use tracing::instrument;
 
-use crate::{
-    error::HandlerError,
-    location::{Location, NewLocation},
-};
+use crate::location::{Location, NewLocation};
+
+use super::error::HandlerError;
 
 #[instrument]
 pub async fn get_all_locations(

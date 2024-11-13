@@ -6,10 +6,9 @@ use axum::{
 use sqlx::PgPool;
 use tracing::instrument;
 
-use crate::{
-    error::HandlerError,
-    item::{Item, NewItem},
-};
+use crate::item::{Item, NewItem};
+
+use super::error::HandlerError;
 
 #[instrument]
 pub async fn get_all_items(

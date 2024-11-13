@@ -1,5 +1,4 @@
 mod category;
-mod error;
 mod file;
 mod item;
 mod location;

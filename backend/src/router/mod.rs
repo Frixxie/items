@@ -24,6 +24,7 @@ use tracing::info;
 
 mod category;
 mod common;
+mod error;
 mod file;
 mod item;
 mod location;
@@ -52,27 +53,42 @@ async fn profile_endpoint(request: Request, next: Next) -> Response {
 }
 
 pub fn create_router(connection: PgPool, metrics_handler: PrometheusHandle) -> Router {
+    let item_router = Router::new()
+        .route("/items", get(get_all_items))
+        .route("/items/:id", get(get_item_by_id))
+        .route("/items", post(add_item))
+        .route("/items/:id", delete(delete_item_by_id))
+        .route("/items", put(update_item))
+        .with_state(connection.clone());
+
+    let location_router = Router::new()
+        .route("/locations", get(get_all_locations))
+        .route("/locations/:id", get(get_location_by_id))
+        .route("/locations", post(add_location))
+        .route("/locations/:id", delete(delete_location_by_id))
+        .route("/locations", put(update_location))
+        .with_state(connection.clone());
+
+    let category_router = Router::new()
+        .route("/categories", get(get_all_categories))
+        .route("/categories/:id", get(get_category_by_id))
+        .route("/categories", post(add_category))
+        .route("/categories/:id", delete(delete_category_by_id))
+        .route("/categories", put(update_category))
+        .with_state(connection.clone());
+
+    let file_router = Router::new()
+        .route("/files/:id", get(get_file_by_id))
+        .route("/files", post(add_file))
+        .route("/files/:id", delete(delete_file_by_id))
+        .route("/file_infos", get(get_all_files))
+        .with_state(connection);
+
     Router::new()
-        .route("/api/items", get(get_all_items))
-        .route("/api/items/:id", get(get_item_by_id))
-        .route("/api/items", post(add_item))
-        .route("/api/items/:id", delete(delete_item_by_id))
-        .route("/api/items", put(update_item))
-        .route("/api/locations", get(get_all_locations))
-        .route("/api/locations/:id", get(get_location_by_id))
-        .route("/api/locations", post(add_location))
-        .route("/api/locations/:id", delete(delete_location_by_id))
-        .route("/api/locations", put(update_location))
-        .route("/api/categories", get(get_all_categories))
-        .route("/api/categories/:id", get(get_category_by_id))
-        .route("/api/categories", post(add_category))
-        .route("/api/categories/:id", delete(delete_category_by_id))
-        .route("/api/categories", put(update_category))
-        .route("/api/files/:id", get(get_file_by_id))
-        .route("/api/files", post(add_file))
-        .route("/api/files/:id", delete(delete_file_by_id))
-        .route("/api/file_infos", get(get_all_files))
-        .with_state(connection)
+        .nest("/api", item_router)
+        .nest("/api", location_router)
+        .nest("/api", category_router)
+        .nest("/api", file_router)
         .route("/metrics", get(metrics))
         .with_state(metrics_handler)
         .route("/status/health", get(status))
