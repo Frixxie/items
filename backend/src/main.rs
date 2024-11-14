@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
     info!("Connecting to DB at {}", opts.db_url);
     let connection = PgPool::connect(&opts.db_url).await.unwrap();
 
-    let router = router::create_router(connection, metrics_handler);
+    let router = router::create_router(connection, Some(metrics_handler));
     let listener = tokio::net::TcpListener::bind(opts.host).await?;
     axum::serve(listener, router).await?;
     Ok(())

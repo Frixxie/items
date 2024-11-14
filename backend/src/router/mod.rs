@@ -52,7 +52,7 @@ async fn profile_endpoint(request: Request, next: Next) -> Response {
     response
 }
 
-pub fn create_router(connection: PgPool, metrics_handler: PrometheusHandle) -> Router {
+pub fn create_router(connection: PgPool, metrics_handler: Option<PrometheusHandle>) -> Router {
     let item_router = Router::new()
         .route("/items", get(get_all_items))
         .route("/items/:id", get(get_item_by_id))

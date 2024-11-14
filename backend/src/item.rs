@@ -11,7 +11,7 @@ pub struct Item {
     date_origin: DateTime<Utc>,
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct NewItem {
     pub name: String,
     pub description: String,
