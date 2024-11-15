@@ -80,15 +80,19 @@ mod tests {
         http::{Method, Request, StatusCode},
     };
     use chrono::Utc;
+    use http_body_util::BodyExt;
     use sqlx::PgPool;
     use testcontainers::ContainerAsync;
     use testcontainers_modules::{
         postgres::{self, Postgres},
         testcontainers::runners::AsyncRunner,
     };
-    use tower::{Service, ServiceExt};
+    use tower::{Service, ServiceExt}; // for `collect`
 
-    use crate::{item::NewItem, router::create_router};
+    use crate::{
+        item::{Item, NewItem},
+        router::create_router,
+    };
 
     async fn setup() -> (ContainerAsync<Postgres>, PgPool) {
         let postgres_container = postgres::Postgres::default().start().await.unwrap();
@@ -104,7 +108,7 @@ mod tests {
     }
 
     #[tokio::test]
-    pub async fn should_insert_and_get_item() {
+    pub async fn should_insert_and_get_items() {
         let (_postgres_container, connection) = setup().await;
         let mut router = create_router(connection, None);
 
@@ -114,19 +118,20 @@ mod tests {
             date_origin: Utc::now(),
         };
 
-        // let create_request = Request::builder()
-        //     .uri("/api/items")
-        //     .method(Method::POST)
-        //     .body(Body::from(serde_json::to_string(&item).unwrap()))
-        //     .unwrap();
+        let create_request = Request::builder()
+            .uri("/api/items")
+            .method(Method::POST)
+            .header("Content-Type", "application/json")
+            .body(Body::from(serde_json::to_string(&item).unwrap()))
+            .unwrap();
 
-        // let response = ServiceExt::<Request<Body>>::ready(&mut router)
-        //     .await
-        //     .unwrap()
-        //     .call(create_request)
-        //     .await
-        //     .unwrap();
-        // assert_eq!(response.status(), StatusCode::OK);
+        let response = ServiceExt::<Request<Body>>::ready(&mut router)
+            .await
+            .unwrap()
+            .call(create_request)
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
 
         let get_request = Request::builder()
             .uri("/api/items")
@@ -142,5 +147,190 @@ mod tests {
             .unwrap();
         dbg!(&response);
         assert_eq!(response.status(), StatusCode::OK);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let items = serde_json::from_slice::<Vec<Item>>(&body).unwrap();
+        assert_eq!(items.len(), 1);
+    }
+
+    #[tokio::test]
+    pub async fn should_insert_and_get_item_by_id() {
+        let (_postgres_container, connection) = setup().await;
+        let mut router = create_router(connection, None);
+
+        let item = NewItem {
+            name: "item".to_string(),
+            description: "description".to_string(),
+            date_origin: Utc::now(),
+        };
+
+        let create_request = Request::builder()
+            .uri("/api/items")
+            .method(Method::POST)
+            .header("Content-Type", "application/json")
+            .body(Body::from(serde_json::to_string(&item).unwrap()))
+            .unwrap();
+
+        let response = ServiceExt::<Request<Body>>::ready(&mut router)
+            .await
+            .unwrap()
+            .call(create_request)
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let get_request = Request::builder()
+            .uri("/api/items/1")
+            .method(Method::GET)
+            .body(Body::empty())
+            .unwrap();
+
+        let response = ServiceExt::<Request<Body>>::ready(&mut router)
+            .await
+            .unwrap()
+            .call(get_request)
+            .await
+            .unwrap();
+        dbg!(&response);
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let item = serde_json::from_slice::<Item>(&body).unwrap();
+        assert_eq!(item.id, 1);
+    }
+
+    #[tokio::test]
+    pub async fn should_insert_and_update_item() {
+        let (_postgres_container, connection) = setup().await;
+        let mut router = create_router(connection, None);
+
+        let item = NewItem {
+            name: "item".to_string(),
+            description: "description".to_string(),
+            date_origin: Utc::now(),
+        };
+
+        let create_request = Request::builder()
+            .uri("/api/items")
+            .method(Method::POST)
+            .header("Content-Type", "application/json")
+            .body(Body::from(serde_json::to_string(&item).unwrap()))
+            .unwrap();
+
+        let response = ServiceExt::<Request<Body>>::ready(&mut router)
+            .await
+            .unwrap()
+            .call(create_request)
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let get_request = Request::builder()
+            .uri("/api/items")
+            .method(Method::GET)
+            .body(Body::empty())
+            .unwrap();
+
+        let response = ServiceExt::<Request<Body>>::ready(&mut router)
+            .await
+            .unwrap()
+            .call(get_request)
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let mut items = serde_json::from_slice::<Vec<Item>>(&body).unwrap();
+        let item = items.first_mut().unwrap();
+
+        item.name = "new name".to_string();
+
+        let update_request = Request::builder()
+            .uri("/api/items")
+            .method(Method::PUT)
+            .header("Content-Type", "application/json")
+            .body(Body::from(serde_json::to_string(&item).unwrap()))
+            .unwrap();
+
+        let response = ServiceExt::<Request<Body>>::ready(&mut router)
+            .await
+            .unwrap()
+            .call(update_request)
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let get_request = Request::builder()
+            .uri("/api/items")
+            .method(Method::GET)
+            .body(Body::empty())
+            .unwrap();
+
+        let response = ServiceExt::<Request<Body>>::ready(&mut router)
+            .await
+            .unwrap()
+            .call(get_request)
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let mut items = serde_json::from_slice::<Vec<Item>>(&body).unwrap();
+        let item = items.first_mut().unwrap();
+        assert_eq!(item.name, "new name");
+    }
+
+    #[tokio::test]
+    pub async fn should_insert_and_delete_item() {
+        let (_postgres_container, connection) = setup().await;
+        let mut router = create_router(connection, None);
+
+        let item = NewItem {
+            name: "item".to_string(),
+            description: "description".to_string(),
+            date_origin: Utc::now(),
+        };
+
+        let create_request = Request::builder()
+            .uri("/api/items")
+            .method(Method::POST)
+            .header("Content-Type", "application/json")
+            .body(Body::from(serde_json::to_string(&item).unwrap()))
+            .unwrap();
+
+        let response = ServiceExt::<Request<Body>>::ready(&mut router)
+            .await
+            .unwrap()
+            .call(create_request)
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let delete_request = Request::builder()
+            .uri("/api/items/1")
+            .method(Method::DELETE)
+            .body(Body::empty())
+            .unwrap();
+
+        let response = ServiceExt::<Request<Body>>::ready(&mut router)
+            .await
+            .unwrap()
+            .call(delete_request)
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let get_request = Request::builder()
+            .uri("/api/items")
+            .method(Method::GET)
+            .body(Body::empty())
+            .unwrap();
+
+        let response = ServiceExt::<Request<Body>>::ready(&mut router)
+            .await
+            .unwrap()
+            .call(get_request)
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let items = serde_json::from_slice::<Vec<Item>>(&body).unwrap();
+        assert_eq!(items.len(), 0);
     }
 }
