@@ -76,9 +76,28 @@ mod tests {
 
     use super::*;
     use sqlx::PgPool;
+    use testcontainers::ContainerAsync;
+    use testcontainers_modules::{
+        postgres::{self, Postgres},
+        testcontainers::runners::AsyncRunner,
+    };
 
-    #[sqlx::test]
-    pub async fn create(pool: PgPool) {
+    async fn setup() -> (ContainerAsync<Postgres>, PgPool) {
+        let postgres_container = postgres::Postgres::default().start().await.unwrap();
+        let host_port = postgres_container.get_host_port_ipv4(5432).await.unwrap();
+        let connection_string =
+            &format!("postgres://postgres:postgres@127.0.0.1:{host_port}/postgres",);
+        let connection = PgPool::connect(&connection_string).await.unwrap();
+        sqlx::migrate!("./migrations")
+            .run(&connection)
+            .await
+            .unwrap();
+        (postgres_container, connection)
+    }
+
+    #[tokio::test]
+    pub async fn create() {
+        let (_container, pool) = setup().await;
         Location::insert_into_db(&pool, "Kitchen", "Where we make food")
             .await
             .unwrap();
@@ -93,8 +112,9 @@ mod tests {
         assert_eq!(location.description, "Where we make food".to_string());
     }
 
-    #[sqlx::test]
-    pub async fn select_by_id(pool: PgPool) {
+    #[tokio::test]
+    pub async fn select_by_id() {
+        let (_container, pool) = setup().await;
         Location::insert_into_db(&pool, "Kitchen", "Where we make food")
             .await
             .unwrap();
@@ -108,8 +128,9 @@ mod tests {
         assert_eq!(location.description, "Where we make food".to_string());
     }
 
-    #[sqlx::test]
-    pub async fn delete(pool: PgPool) {
+    #[tokio::test]
+    pub async fn delete() {
+        let (_container, pool) = setup().await;
         Location::insert_into_db(&pool, "Kitchen", "Where we make food")
             .await
             .unwrap();
@@ -131,8 +152,9 @@ mod tests {
         assert!(location.is_err());
     }
 
-    #[sqlx::test]
-    pub async fn update(pool: PgPool) {
+    #[tokio::test]
+    pub async fn update() {
+        let (_container, pool) = setup().await;
         Location::insert_into_db(&pool, "Kitchen", "Where we make food")
             .await
             .unwrap();

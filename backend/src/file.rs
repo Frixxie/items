@@ -181,11 +181,45 @@ impl FileInfo {
 #[cfg(test)]
 mod tests {
 
+    use std::env;
+
     use super::*;
     use sqlx::PgPool;
+    use testcontainers::ContainerAsync;
+    use testcontainers_modules::{
+        minio::{self, MinIO},
+        postgres::{self, Postgres},
+        testcontainers::runners::AsyncRunner,
+    };
 
-    #[sqlx::test]
-    pub async fn create_and_read_from_everything(pool: PgPool) {
+    async fn setup_database() -> (ContainerAsync<Postgres>, PgPool) {
+        let postgres_container = postgres::Postgres::default().start().await.unwrap();
+        let host_port = postgres_container.get_host_port_ipv4(5432).await.unwrap();
+        let connection_string =
+            &format!("postgres://postgres:postgres@127.0.0.1:{host_port}/postgres",);
+        let connection = PgPool::connect(&connection_string).await.unwrap();
+        sqlx::migrate!("./migrations")
+            .run(&connection)
+            .await
+            .unwrap();
+        (postgres_container, connection)
+    }
+
+    async fn setup_minio() -> ContainerAsync<MinIO> {
+        let minio_container = minio::MinIO::default().start().await.unwrap();
+        let host_port = minio_container.get_host_port_ipv4(9000).await.unwrap();
+        env::set_var("AWS_ACCESS_KEY_ID", "admin");
+        env::set_var("AWS_SECRET_ACCESS_KEY", "adminadmin");
+        env::set_var("AWS_REGION", "no");
+        env::set_var("AWS_ENDPOINT", &format!("http://localhost:{}", host_port));
+        minio_container
+    }
+
+    #[tokio::test]
+    pub async fn create_and_read_from_everything() {
+        let (_container, pool) = setup_database().await;
+        let _minio_container = setup_minio().await;
+
         FileInfo::insert_into_db(&pool, &[1, 2, 3, 4, 5])
             .await
             .unwrap();
@@ -216,6 +250,8 @@ mod tests {
 
     #[tokio::test]
     pub async fn insert_and_delete_into_s3() {
+        let _minio_container = setup_minio().await;
+
         let credentials =
             Credentials::new(Some("admin"), Some("adminadmin"), None, None, None).unwrap();
         let region = Region::Custom {
@@ -236,6 +272,8 @@ mod tests {
 
     #[tokio::test]
     pub async fn insert_get_and_delete_s3() {
+        let _minio_container = setup_minio().await;
+
         let credentials =
             Credentials::new(Some("admin"), Some("adminadmin"), None, None, None).unwrap();
         let region = Region::Custom {
