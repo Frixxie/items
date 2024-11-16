@@ -92,6 +92,7 @@ mod tests {
         let minio_container = minio::MinIO::default()
             .with_env_var("MINIO_ROOT_USER", "admin")
             .with_env_var("MINIO_ROOT_PASSWORD", "adminadmin")
+            .with_env_var("MINIO_BUCKET", "no")
             .start()
             .await
             .unwrap();
