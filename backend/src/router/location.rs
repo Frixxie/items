@@ -71,7 +71,6 @@ mod tests {
         body::Body,
         http::{Method, Request, StatusCode},
     };
-    use chrono::Utc;
     use http_body_util::BodyExt;
     use sqlx::PgPool;
     use testcontainers::ContainerAsync;
@@ -82,7 +81,6 @@ mod tests {
     use tower::{Service, ServiceExt}; // for `collect`
 
     use crate::{
-        item::{Item, NewItem},
         location::{Location, NewLocation},
         router::create_router,
     };
@@ -149,8 +147,8 @@ mod tests {
         let (_postgres_container, connection) = setup().await;
         let mut router = create_router(connection, None);
 
-        let item = NewLocation {
-            name: "item".to_string(),
+        let location = NewLocation {
+            name: "location".to_string(),
             description: "description".to_string(),
         };
 
@@ -158,7 +156,7 @@ mod tests {
             .uri("/api/locations")
             .method(Method::POST)
             .header("Content-Type", "application/json")
-            .body(Body::from(serde_json::to_string(&item).unwrap()))
+            .body(Body::from(serde_json::to_string(&location).unwrap()))
             .unwrap();
 
         let response = ServiceExt::<Request<Body>>::ready(&mut router)
@@ -184,144 +182,142 @@ mod tests {
         dbg!(&response);
         assert_eq!(response.status(), StatusCode::OK);
         let body = response.into_body().collect().await.unwrap().to_bytes();
-        let item = serde_json::from_slice::<Location>(&body).unwrap();
-        assert_eq!(item.id, 1);
+        let location = serde_json::from_slice::<Location>(&body).unwrap();
+        assert_eq!(location.id, 1);
     }
 
-    // #[tokio::test]
-    // pub async fn should_insert_and_update_item() {
-    //     let (_postgres_container, connection) = setup().await;
-    //     let mut router = create_router(connection, None);
+    #[tokio::test]
+    pub async fn should_insert_and_update_location() {
+        let (_postgres_container, connection) = setup().await;
+        let mut router = create_router(connection, None);
 
-    //     let item = NewItem {
-    //         name: "item".to_string(),
-    //         description: "description".to_string(),
-    //         date_origin: Utc::now(),
-    //     };
+        let location = NewLocation {
+            name: "location".to_string(),
+            description: "description".to_string(),
+        };
 
-    //     let create_request = Request::builder()
-    //         .uri("/api/items")
-    //         .method(Method::POST)
-    //         .header("Content-Type", "application/json")
-    //         .body(Body::from(serde_json::to_string(&item).unwrap()))
-    //         .unwrap();
+        let create_request = Request::builder()
+            .uri("/api/locations")
+            .method(Method::POST)
+            .header("Content-Type", "application/json")
+            .body(Body::from(serde_json::to_string(&location).unwrap()))
+            .unwrap();
 
-    //     let response = ServiceExt::<Request<Body>>::ready(&mut router)
-    //         .await
-    //         .unwrap()
-    //         .call(create_request)
-    //         .await
-    //         .unwrap();
-    //     assert_eq!(response.status(), StatusCode::OK);
+        let response = ServiceExt::<Request<Body>>::ready(&mut router)
+            .await
+            .unwrap()
+            .call(create_request)
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
 
-    //     let get_request = Request::builder()
-    //         .uri("/api/items")
-    //         .method(Method::GET)
-    //         .body(Body::empty())
-    //         .unwrap();
+        let get_request = Request::builder()
+            .uri("/api/locations")
+            .method(Method::GET)
+            .body(Body::empty())
+            .unwrap();
 
-    //     let response = ServiceExt::<Request<Body>>::ready(&mut router)
-    //         .await
-    //         .unwrap()
-    //         .call(get_request)
-    //         .await
-    //         .unwrap();
-    //     assert_eq!(response.status(), StatusCode::OK);
-    //     let body = response.into_body().collect().await.unwrap().to_bytes();
-    //     let mut items = serde_json::from_slice::<Vec<Item>>(&body).unwrap();
-    //     let item = items.first_mut().unwrap();
+        let response = ServiceExt::<Request<Body>>::ready(&mut router)
+            .await
+            .unwrap()
+            .call(get_request)
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let mut locations = serde_json::from_slice::<Vec<Location>>(&body).unwrap();
+        let location = locations.first_mut().unwrap();
 
-    //     item.name = "new name".to_string();
+        location.name = "new name".to_string();
 
-    //     let update_request = Request::builder()
-    //         .uri("/api/items")
-    //         .method(Method::PUT)
-    //         .header("Content-Type", "application/json")
-    //         .body(Body::from(serde_json::to_string(&item).unwrap()))
-    //         .unwrap();
+        let update_request = Request::builder()
+            .uri("/api/locations")
+            .method(Method::PUT)
+            .header("Content-Type", "application/json")
+            .body(Body::from(serde_json::to_string(&location).unwrap()))
+            .unwrap();
 
-    //     let response = ServiceExt::<Request<Body>>::ready(&mut router)
-    //         .await
-    //         .unwrap()
-    //         .call(update_request)
-    //         .await
-    //         .unwrap();
-    //     assert_eq!(response.status(), StatusCode::OK);
+        let response = ServiceExt::<Request<Body>>::ready(&mut router)
+            .await
+            .unwrap()
+            .call(update_request)
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
 
-    //     let get_request = Request::builder()
-    //         .uri("/api/items")
-    //         .method(Method::GET)
-    //         .body(Body::empty())
-    //         .unwrap();
+        let get_request = Request::builder()
+            .uri("/api/locations")
+            .method(Method::GET)
+            .body(Body::empty())
+            .unwrap();
 
-    //     let response = ServiceExt::<Request<Body>>::ready(&mut router)
-    //         .await
-    //         .unwrap()
-    //         .call(get_request)
-    //         .await
-    //         .unwrap();
-    //     assert_eq!(response.status(), StatusCode::OK);
-    //     let body = response.into_body().collect().await.unwrap().to_bytes();
-    //     let mut items = serde_json::from_slice::<Vec<Item>>(&body).unwrap();
-    //     let item = items.first_mut().unwrap();
-    //     assert_eq!(item.name, "new name");
-    // }
+        let response = ServiceExt::<Request<Body>>::ready(&mut router)
+            .await
+            .unwrap()
+            .call(get_request)
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let mut locations = serde_json::from_slice::<Vec<Location>>(&body).unwrap();
+        let location = locations.first_mut().unwrap();
+        assert_eq!(location.name, "new name");
+    }
 
-    // #[tokio::test]
-    // pub async fn should_insert_and_delete_item() {
-    //     let (_postgres_container, connection) = setup().await;
-    //     let mut router = create_router(connection, None);
+    #[tokio::test]
+    pub async fn should_insert_and_delete_location() {
+        let (_postgres_container, connection) = setup().await;
+        let mut router = create_router(connection, None);
 
-    //     let item = NewItem {
-    //         name: "item".to_string(),
-    //         description: "description".to_string(),
-    //         date_origin: Utc::now(),
-    //     };
+        let location = NewLocation {
+            name: "location".to_string(),
+            description: "description".to_string(),
+        };
 
-    //     let create_request = Request::builder()
-    //         .uri("/api/items")
-    //         .method(Method::POST)
-    //         .header("Content-Type", "application/json")
-    //         .body(Body::from(serde_json::to_string(&item).unwrap()))
-    //         .unwrap();
+        let create_request = Request::builder()
+            .uri("/api/locations")
+            .method(Method::POST)
+            .header("Content-Type", "application/json")
+            .body(Body::from(serde_json::to_string(&location).unwrap()))
+            .unwrap();
 
-    //     let response = ServiceExt::<Request<Body>>::ready(&mut router)
-    //         .await
-    //         .unwrap()
-    //         .call(create_request)
-    //         .await
-    //         .unwrap();
-    //     assert_eq!(response.status(), StatusCode::OK);
+        let response = ServiceExt::<Request<Body>>::ready(&mut router)
+            .await
+            .unwrap()
+            .call(create_request)
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
 
-    //     let delete_request = Request::builder()
-    //         .uri("/api/items/1")
-    //         .method(Method::DELETE)
-    //         .body(Body::empty())
-    //         .unwrap();
+        let delete_request = Request::builder()
+            .uri("/api/locations/1")
+            .method(Method::DELETE)
+            .body(Body::empty())
+            .unwrap();
 
-    //     let response = ServiceExt::<Request<Body>>::ready(&mut router)
-    //         .await
-    //         .unwrap()
-    //         .call(delete_request)
-    //         .await
-    //         .unwrap();
-    //     assert_eq!(response.status(), StatusCode::OK);
+        let response = ServiceExt::<Request<Body>>::ready(&mut router)
+            .await
+            .unwrap()
+            .call(delete_request)
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
 
-    //     let get_request = Request::builder()
-    //         .uri("/api/items")
-    //         .method(Method::GET)
-    //         .body(Body::empty())
-    //         .unwrap();
+        let get_request = Request::builder()
+            .uri("/api/locations")
+            .method(Method::GET)
+            .body(Body::empty())
+            .unwrap();
 
-    //     let response = ServiceExt::<Request<Body>>::ready(&mut router)
-    //         .await
-    //         .unwrap()
-    //         .call(get_request)
-    //         .await
-    //         .unwrap();
-    //     assert_eq!(response.status(), StatusCode::OK);
-    //     let body = response.into_body().collect().await.unwrap().to_bytes();
-    //     let items = serde_json::from_slice::<Vec<Item>>(&body).unwrap();
-    //     assert_eq!(items.len(), 0);
-    // }
+        let response = ServiceExt::<Request<Body>>::ready(&mut router)
+            .await
+            .unwrap()
+            .call(get_request)
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let locations = serde_json::from_slice::<Vec<Location>>(&body).unwrap();
+        assert_eq!(locations.len(), 0);
+    }
 }
