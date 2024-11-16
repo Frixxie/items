@@ -185,7 +185,7 @@ mod tests {
 
     use super::*;
     use sqlx::PgPool;
-    use testcontainers::ContainerAsync;
+    use testcontainers::{ContainerAsync, ImageExt};
     use testcontainers_modules::{
         minio::{self, MinIO},
         postgres::{self, Postgres},
@@ -206,7 +206,12 @@ mod tests {
     }
 
     async fn setup_minio() -> ContainerAsync<MinIO> {
-        let minio_container = minio::MinIO::default().start().await.unwrap();
+        let minio_container = minio::MinIO::default()
+            .with_env_var("MINIO_ROOT_USER", "admin")
+            .with_env_var("MINIO_ROOT_PASSWORD", "adminadmin")
+            .start()
+            .await
+            .unwrap();
         let host_port = minio_container.get_host_port_ipv4(9000).await.unwrap();
         env::set_var("AWS_ACCESS_KEY_ID", "admin");
         env::set_var("AWS_SECRET_ACCESS_KEY", "adminadmin");
@@ -252,12 +257,7 @@ mod tests {
     pub async fn insert_and_delete_into_s3() {
         let _minio_container = setup_minio().await;
 
-        let credentials =
-            Credentials::new(Some("admin"), Some("adminadmin"), None, None, None).unwrap();
-        let region = Region::Custom {
-            region: "no".to_owned(),
-            endpoint: "http://localhost:9000".to_owned(),
-        };
+        let (credentials, region) = get_s3_credentials().unwrap();
 
         let file = File::new([1, 2, 3, 4].to_vec());
 
@@ -274,12 +274,7 @@ mod tests {
     pub async fn insert_get_and_delete_s3() {
         let _minio_container = setup_minio().await;
 
-        let credentials =
-            Credentials::new(Some("admin"), Some("adminadmin"), None, None, None).unwrap();
-        let region = Region::Custom {
-            region: "no".to_owned(),
-            endpoint: "http://localhost:9000".to_owned(),
-        };
+        let (credentials, region) = get_s3_credentials().unwrap();
 
         let file = File::new([1, 2, 3].to_vec());
 

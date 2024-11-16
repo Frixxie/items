@@ -13,9 +13,7 @@ build:
 	cd backend && cargo b --verbose
 
 test: build
-	docker compose -f docker-compose.yaml up --wait
 	cd backend && cargo t
-	docker compose -f docker-compose.yaml down
 
 docker_login:
 	docker login ghcr.io -u $(GITHUB_USER) -p $(GITHUB_TOKEN)
